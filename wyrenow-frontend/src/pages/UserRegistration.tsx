@@ -947,7 +947,7 @@ import RegistrationLayout from '../components/Layout/RegistrationLayout';
 
 const UserRegistration: React.FC = () => {
   const { currency } = useApp();
-  const { countries } = useSelector(selectCountriesState);
+  const { countries, regions} = useSelector(selectCountriesState);
   
   const {
     currentStep,

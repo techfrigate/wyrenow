@@ -5,7 +5,7 @@ const { validateRequest, countrySchema, regionSchema,validateCountryParams } = r
 
 // Country routes
 router.get('/', CountryController.getAllCountries);
-router.get('/registration', CountryController.getCountriesForRegistration);
+router.get('/active-counties', CountryController.getCountriesForRegistration);
 router.get('/:id', CountryController.getCountryById);
 router.post('/', validateRequest(countrySchema), CountryController.createCountry);
 router.put('/:id', validateRequest(countrySchema), CountryController.updateCountry);

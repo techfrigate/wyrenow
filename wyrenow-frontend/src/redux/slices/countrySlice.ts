@@ -12,7 +12,7 @@ export interface Country {
     updated_at: string;
     regions?: Region[];
 }
-
+ 
 export interface Region {
     id: number;
     name: string;
@@ -56,12 +56,12 @@ export const fetchCountries = createAsyncThunk<
     'countries/fetchCountries',
     async (_, { rejectWithValue }) => {
         try {
-             const response = await axios.get(`${BaseUrl}/countries`);
-        console.log(response,"response of country");
+            const response = await axios.get(`${BaseUrl}/countries/active-counties`);
+            console.log(response, "response of country");
             if (!response) {
                 return rejectWithValue('Failed to fetch countries');
             }
-            
+
             return response.data.data;
         } catch (error) {
             return rejectWithValue('Network error occurred');
@@ -78,13 +78,8 @@ export const fetchRegionsByCountry = createAsyncThunk<
     'countries/fetchRegionsByCountry',
     async (countryId, { rejectWithValue }) => {
         try {
-            const response = await fetch(`/api/countries/${countryId}/regions`);
-            const result: ApiResponse<Region[]> = await response.json();
-            
-            if (!response.ok) {
-                return rejectWithValue(result.message || 'Failed to fetch regions');
-            }
-            
+            const response = await axios.get(`${BaseUrl}/countries/${countryId}/regions`);
+           
             return { countryId, regions: result.data };
         } catch (error) {
             return rejectWithValue('Network error occurred');

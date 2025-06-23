@@ -1,6 +1,9 @@
 import React from 'react';
 import { FormSelect } from '../ui';
 import { Country, FormData, FormErrors } from '../../types';
+import { useDispatch } from 'react-redux';
+import { fetchRegionsByCountry } from '../../redux/slices/countrySlice';
+import type { AppDispatch } from '../../redux/store';
 
 interface GeographicStepProps {
   formData: FormData;
@@ -15,13 +18,17 @@ const GeographicStep: React.FC<GeographicStepProps> = ({
   countries,
   updateFormData
 }) => {
-  const selectedCountry = countries.find(c => c.id === Number(formData.country));
-  
+  const dispatch = useDispatch<AppDispatch>();
+
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     updateFormData({ 
       country: e.target.value, 
-      region: '' // Reset region when country changes
+      region: ''
     });
+    dispatch(fetchRegionsByCountry(Number(e.target.value)));
+
+     
+  
   };
 
   const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

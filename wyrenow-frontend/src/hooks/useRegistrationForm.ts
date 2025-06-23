@@ -60,7 +60,8 @@ export const useRegistrationForm = () => {
   }, [dispatch]);
   
   // Find selected country and package
-  const selectedCountry = countries.find(c => c.id === Number(formData.country));
+  
+  const selectedCountry = countries?.find(c => c.id === Number(formData.country));
   const selectedPackage = REGISTRATION_PACKAGES.find(p => p.id === formData.selectedPackage);
   
   // Calculate totals

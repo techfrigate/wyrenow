@@ -1,152 +1,157 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- ================================================
+-- WyreNow MLM Database Schema - MySQL Version
+-- ================================================
+
+-- Create database if not exists
+CREATE DATABASE IF NOT EXISTS wyrenow_db;
+USE wyrenow_db;
 
 -- Countries table
- 
 CREATE TABLE IF NOT EXISTS countries (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL UNIQUE,
     code VARCHAR(3) NOT NULL UNIQUE,
     currency VARCHAR(50) NOT NULL,
     currency_symbol VARCHAR(10) NOT NULL,
     pv_rate DECIMAL(10,2) NOT NULL DEFAULT 1.00,
-    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    status ENUM('active', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Regions/States table
 CREATE TABLE IF NOT EXISTS regions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    country_id UUID NOT NULL REFERENCES countries(id) ON DELETE CASCADE,
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    country_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
     code VARCHAR(10),
-    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    status ENUM('active', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(country_id, name)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (country_id) REFERENCES countries(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_country_region (country_id, name)
 );
-
 
 -- Packages table
 CREATE TABLE IF NOT EXISTS packages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
-    pv INTEGER NOT NULL,
+    pv INT NOT NULL,
     price_ngn DECIMAL(10,2) NOT NULL,
     price_ghs DECIMAL(10,2) NOT NULL,
-    bottles INTEGER NOT NULL DEFAULT 0,
+    bottles INT NOT NULL DEFAULT 0,
     package_type VARCHAR(50) DEFAULT 'standard',
-    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    status ENUM('active', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-
 -- MLM registrations table
-CREATE TABLE mlm_registrations (
-    id SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS mlm_registrations (
+    id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) UNIQUE NOT NULL,
     sponsor_username VARCHAR(50) NOT NULL,
-    -- placement_username VARCHAR(50) NOT NULL,
     placement_leg VARCHAR(10) NOT NULL,
-    -- sponsor_user_id INTEGER,
-    -- placement_user_id INTEGER,
-    existing_user_id INTEGER,
+    existing_user_id INT,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     full_name VARCHAR(200) NOT NULL,
     email VARCHAR(100) NOT NULL,
     phone VARCHAR(20) NOT NULL,
     date_of_birth DATE,
-    country_id INTEGER REFERENCES countries(id) NOT NULL,
-    region_id INTEGER REFERENCES regions(id) NOT NULL,
-    package_id INTEGER,
+    country_id INT NOT NULL,
+    region_id INT NOT NULL,
+    package_id VARCHAR(36),
     total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
     password_hash VARCHAR(255) NOT NULL,
     transaction_pin_hash VARCHAR(255) NOT NULL,
-    withdrawal_details JSONB,
+    withdrawal_details JSON,
     registration_status VARCHAR(20) DEFAULT 'completed',
-    registered_by INTEGER NOT NULL,
+    registered_by INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (country_id) REFERENCES countries(id),
+    FOREIGN KEY (region_id) REFERENCES regions(id),
+    FOREIGN KEY (package_id) REFERENCES packages(id)
 );
 
-
-CREATE TABLE tree (
-    user_id INT PRIMARY KEY AUTO_INCREMENT,
+-- Tree structure - referencing mlm_registrations
+CREATE TABLE IF NOT EXISTS tree (
+    user_id INT PRIMARY KEY,
     username VARCHAR(255) NOT NULL,
     parent_user_id INT,
     left_leg_user_id INT,
     right_leg_user_id INT,
     registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (parent_user_id) REFERENCES tree(user_id) ON DELETE SET NULL,
-    FOREIGN KEY (left_leg_user_id) REFERENCES tree(user_id) ON DELETE SET NULL,
-    FOREIGN KEY (right_leg_user_id) REFERENCES tree(user_id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES mlm_registrations(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_user_id) REFERENCES mlm_registrations(id) ON DELETE SET NULL,
+    FOREIGN KEY (left_leg_user_id) REFERENCES mlm_registrations(id) ON DELETE SET NULL,
+    FOREIGN KEY (right_leg_user_id) REFERENCES mlm_registrations(id) ON DELETE SET NULL
 );
 
-CREATE TABLE generation_tree (
+-- Generation tree - referencing mlm_registrations
+CREATE TABLE IF NOT EXISTS generation_tree (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     upline_user INT,
-
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (upline_user) REFERENCES users(user_id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES mlm_registrations(id) ON DELETE CASCADE,
+    FOREIGN KEY (upline_user) REFERENCES mlm_registrations(id) ON DELETE SET NULL
 );
 
-CREATE TABLE user_pv (
+-- User PV - referencing mlm_registrations
+CREATE TABLE IF NOT EXISTS user_pv (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     left_leg_pv INT DEFAULT 0,
     right_leg_pv INT DEFAULT 0,
-    total_pv INT GENERATED ALWAYS AS (left_leg_pv + right_leg_pv) STORED,
-
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    total_pv INT AS (left_leg_pv + right_leg_pv) STORED,
+    FOREIGN KEY (user_id) REFERENCES mlm_registrations(id) ON DELETE CASCADE
 );
 
-CREATE TABLE user_bv (
+-- User BV - referencing mlm_registrations
+CREATE TABLE IF NOT EXISTS user_bv (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     left_leg_bv INT DEFAULT 0,
     right_leg_bv INT DEFAULT 0,
-    total_bv INT GENERATED ALWAYS AS (left_leg_bv + right_leg_bv) STORED,
-    
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    total_bv INT AS (left_leg_bv + right_leg_bv) STORED,
+    FOREIGN KEY (user_id) REFERENCES mlm_registrations(id) ON DELETE CASCADE
 );
 
-CREATE TABLE pv_logs (
+-- PV logs - referencing mlm_registrations
+CREATE TABLE IF NOT EXISTS pv_logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
     uid INT NOT NULL,
     updated_for_uid INT NOT NULL,
     message VARCHAR(500),
     added_pv INT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (uid) REFERENCES users(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (updated_for_uid) REFERENCES users(user_id) ON DELETE CASCADE
+    FOREIGN KEY (uid) REFERENCES mlm_registrations(id) ON DELETE CASCADE,
+    FOREIGN KEY (updated_for_uid) REFERENCES mlm_registrations(id) ON DELETE CASCADE
 );
 
-CREATE TABLE bv_logs (
+-- BV logs - referencing mlm_registrations
+CREATE TABLE IF NOT EXISTS bv_logs (
     id INT PRIMARY KEY AUTO_INCREMENT,
     uid INT NOT NULL,
     updated_for_uid INT NOT NULL,
     message VARCHAR(500),
     added_bv INT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (uid) REFERENCES users(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (updated_for_uid) REFERENCES users(user_id) ON DELETE CASCADE
+    FOREIGN KEY (uid) REFERENCES mlm_registrations(id) ON DELETE CASCADE,
+    FOREIGN KEY (updated_for_uid) REFERENCES mlm_registrations(id) ON DELETE CASCADE
 );
 
 -- Indexes for performance
-CREATE INDEX idx_countries_active ON countries(is_active);
-CREATE INDEX idx_regions_country ON regions(country_id);
-CREATE INDEX idx_regions_active ON regions(is_active);
+CREATE INDEX idx_countries_status ON countries(status);
+CREATE INDEX idx_countries_code ON countries(code);
+CREATE INDEX idx_regions_country_id ON regions(country_id);
+CREATE INDEX idx_regions_status ON regions(status);
+CREATE INDEX idx_packages_status ON packages(status);
+CREATE INDEX idx_packages_pv ON packages(pv);
+CREATE INDEX idx_mlm_registrations_username ON mlm_registrations(username);
 CREATE INDEX idx_mlm_registrations_sponsor ON mlm_registrations(sponsor_username);
-CREATE INDEX idx_mlm_registrations_placement ON mlm_registrations(placement_username);
-CREATE INDEX idx_mlm_registrations_country ON mlm_registrations(country_id);
-CREATE INDEX idx_mlm_registrations_region ON mlm_registrations(region_id);
 CREATE INDEX idx_tree_parent ON tree(parent_user_id);
 CREATE INDEX idx_tree_left ON tree(left_leg_user_id);
 CREATE INDEX idx_tree_right ON tree(right_leg_user_id);
@@ -154,47 +159,86 @@ CREATE INDEX idx_pv_logs_uid ON pv_logs(uid);
 CREATE INDEX idx_pv_logs_updated_for ON pv_logs(updated_for_uid);
 CREATE INDEX idx_bv_logs_uid ON bv_logs(uid);
 CREATE INDEX idx_bv_logs_updated_for ON bv_logs(updated_for_uid);
-CREATE INDEX IF NOT EXISTS idx_countries_status ON countries(status);
-CREATE INDEX IF NOT EXISTS idx_countries_code ON countries(code);
-CREATE INDEX IF NOT EXISTS idx_regions_country_id ON regions(country_id);
-CREATE INDEX IF NOT EXISTS idx_regions_status ON regions(status);
-CREATE INDEX IF NOT EXISTS idx_packages_status ON packages(status);
-CREATE INDEX IF NOT EXISTS idx_packages_pv ON packages(pv);
-
 
 -- Insert default countries
-INSERT INTO countries (name, code, currency, currency_symbol, pv_rate) VALUES
+INSERT IGNORE INTO countries (name, code, currency, currency_symbol, pv_rate) VALUES
 ('Nigeria', 'NG', 'Nigerian Naira', '₦', 525.00),
-('Ghana', 'GH', 'Ghanaian Cedi', 'GH₵', 12.00)
-ON CONFLICT (code) DO NOTHING;
+('Ghana', 'GH', 'Ghanaian Cedi', 'GH₵', 12.00);
 
 -- Insert Nigerian states
-INSERT INTO regions (country_id, name, code) 
-SELECT c.id, state_name, state_code 
-FROM countries c, (VALUES
-    ('Abia', 'AB'), ('Adamawa', 'AD'), ('Akwa Ibom', 'AK'), ('Anambra', 'AN'),
-    ('Bauchi', 'BA'), ('Bayelsa', 'BY'), ('Benue', 'BN'), ('Borno', 'BO'),
-    ('Cross River', 'CR'), ('Delta', 'DE'), ('Ebonyi', 'EB'), ('Edo', 'ED'),
-    ('Ekiti', 'EK'), ('Enugu', 'EN'), ('Federal Capital Territory', 'FC'),
-    ('Gombe', 'GO'), ('Imo', 'IM'), ('Jigawa', 'JI'), ('Kaduna', 'KD'),
-    ('Kano', 'KN'), ('Katsina', 'KT'), ('Kebbi', 'KE'), ('Kogi', 'KO'),
-    ('Kwara', 'KW'), ('Lagos', 'LA'), ('Nasarawa', 'NA'), ('Niger', 'NI'),
-    ('Ogun', 'OG'), ('Ondo', 'ON'), ('Osun', 'OS'), ('Oyo', 'OY'),
-    ('Plateau', 'PL'), ('Rivers', 'RI'), ('Sokoto', 'SO'), ('Taraba', 'TA'),
-    ('Yobe', 'YO'), ('Zamfara', 'ZA')
-) AS states(state_name, state_code)
-WHERE c.code = 'NG'
-ON CONFLICT (country_id, name) DO NOTHING;
+INSERT IGNORE INTO regions (country_id, name, code)
+SELECT 
+    c.id, 
+    states.state_name, 
+    states.state_code
+FROM countries c
+CROSS JOIN (
+    SELECT 'Abia' as state_name, 'AB' as state_code UNION ALL
+    SELECT 'Adamawa', 'AD' UNION ALL
+    SELECT 'Akwa Ibom', 'AK' UNION ALL
+    SELECT 'Anambra', 'AN' UNION ALL
+    SELECT 'Bauchi', 'BA' UNION ALL
+    SELECT 'Bayelsa', 'BY' UNION ALL
+    SELECT 'Benue', 'BN' UNION ALL
+    SELECT 'Borno', 'BO' UNION ALL
+    SELECT 'Cross River', 'CR' UNION ALL
+    SELECT 'Delta', 'DE' UNION ALL
+    SELECT 'Ebonyi', 'EB' UNION ALL
+    SELECT 'Edo', 'ED' UNION ALL
+    SELECT 'Ekiti', 'EK' UNION ALL
+    SELECT 'Enugu', 'EN' UNION ALL
+    SELECT 'Federal Capital Territory', 'FC' UNION ALL
+    SELECT 'Gombe', 'GO' UNION ALL
+    SELECT 'Imo', 'IM' UNION ALL
+    SELECT 'Jigawa', 'JI' UNION ALL
+    SELECT 'Kaduna', 'KD' UNION ALL
+    SELECT 'Kano', 'KN' UNION ALL
+    SELECT 'Katsina', 'KT' UNION ALL
+    SELECT 'Kebbi', 'KE' UNION ALL
+    SELECT 'Kogi', 'KO' UNION ALL
+    SELECT 'Kwara', 'KW' UNION ALL
+    SELECT 'Lagos', 'LA' UNION ALL
+    SELECT 'Nasarawa', 'NA' UNION ALL
+    SELECT 'Niger', 'NI' UNION ALL
+    SELECT 'Ogun', 'OG' UNION ALL
+    SELECT 'Ondo', 'ON' UNION ALL
+    SELECT 'Osun', 'OS' UNION ALL
+    SELECT 'Oyo', 'OY' UNION ALL
+    SELECT 'Plateau', 'PL' UNION ALL
+    SELECT 'Rivers', 'RI' UNION ALL
+    SELECT 'Sokoto', 'SO' UNION ALL
+    SELECT 'Taraba', 'TA' UNION ALL
+    SELECT 'Yobe', 'YO' UNION ALL
+    SELECT 'Zamfara', 'ZA'
+) AS states
+WHERE c.code = 'NG';
 
 -- Insert Ghanaian regions
-INSERT INTO regions (country_id, name, code)
-SELECT c.id, region_name, region_code
-FROM countries c, (VALUES
-    ('Greater Accra', 'GA'), ('Ashanti', 'AS'), ('Western', 'WP'),
-    ('Central', 'CP'), ('Eastern', 'EP'), ('Volta', 'VR'),
-    ('Northern', 'NP'), ('Upper East', 'UE'), ('Upper West', 'UW'),
-    ('Brong Ahafo', 'BA'), ('Western North', 'WN'), ('Ahafo', 'AF'),
-    ('Bono', 'BO'), ('Bono East', 'BE'), ('Oti', 'OT'), ('Savannah', 'SV')
-) AS regions_data(region_name, region_code)
-WHERE c.code = 'GH'
-ON CONFLICT (country_id, name) DO NOTHING;
+INSERT IGNORE INTO regions (country_id, name, code)
+SELECT 
+    c.id, 
+    regions_data.region_name, 
+    regions_data.region_code
+FROM countries c
+CROSS JOIN (
+    SELECT 'Greater Accra' as region_name, 'GA' as region_code UNION ALL
+    SELECT 'Ashanti', 'AS' UNION ALL
+    SELECT 'Western', 'WP' UNION ALL
+    SELECT 'Central', 'CP' UNION ALL
+    SELECT 'Eastern', 'EP' UNION ALL
+    SELECT 'Volta', 'VR' UNION ALL
+    SELECT 'Northern', 'NP' UNION ALL
+    SELECT 'Upper East', 'UE' UNION ALL
+    SELECT 'Upper West', 'UW' UNION ALL
+    SELECT 'Brong Ahafo', 'BA' UNION ALL
+    SELECT 'Western North', 'WN' UNION ALL
+    SELECT 'Ahafo', 'AF' UNION ALL
+    SELECT 'Bono', 'BO' UNION ALL
+    SELECT 'Bono East', 'BE' UNION ALL
+    SELECT 'Oti', 'OT' UNION ALL
+    SELECT 'Savannah', 'SV'
+) AS regions_data
+WHERE c.code = 'GH';
+
+-- Success message
+SELECT 'Database schema created successfully!' AS message;
