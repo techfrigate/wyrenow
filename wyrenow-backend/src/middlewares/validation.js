@@ -45,15 +45,27 @@ const regionSchema = Joi.object({
     status: Joi.string().valid('active', 'inactive').default('active')
 });
 
+// const packageSchema = Joi.object({
+//     name: Joi.string().min(2).max(100).required(),
+//     description: Joi.string().max(500).optional(),
+//     pv: Joi.number().integer().positive().required(),
+//     price_ngn: Joi.number().positive().precision(2).required(),
+//     price_ghs: Joi.number().positive().precision(2).required(),
+//     bottles: Joi.number().integer().min(0).default(0),
+//     package_type: Joi.string().default('standard'),
+//     status: Joi.string().valid('active', 'inactive').default('active')
+// });
+
 const packageSchema = Joi.object({
     name: Joi.string().min(2).max(100).required(),
-    description: Joi.string().max(500).optional(),
+    description: Joi.string().max(500).optional().allow('', null),
     pv: Joi.number().integer().positive().required(),
     price_ngn: Joi.number().positive().precision(2).required(),
     price_ghs: Joi.number().positive().precision(2).required(),
-    bottles: Joi.number().integer().min(0).default(0),
+    bottles: Joi.number().integer().min(0).default(1),
     package_type: Joi.string().default('standard'),
-    status: Joi.string().valid('active', 'inactive').default('active')
+    status: Joi.string().valid('active', 'inactive').default('active'),
+    features: Joi.array().items(Joi.string()).optional().default([])
 });
 
 const registrationSchema = Joi.object({

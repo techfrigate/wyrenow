@@ -1,7 +1,7 @@
 import { Package, Country, Region, DashboardStats } from '../types';
 
 class ApiClient {
-  private baseUrl = '/api';
+  private baseUrl = 'http://localhost:3000/api';
   
   private getHeaders(): HeadersInit {
     const token = localStorage.getItem('admin_token');
@@ -180,32 +180,73 @@ class ApiClient {
     return this.mockCountries.find(c => c.id === id) || null;
   }
 
-  async createCountry(countryData: any): Promise<Country> {
-    await new Promise(resolve => setTimeout(resolve, 500));
+
+   async createCountry(countryData: any): Promise<Country> {
+    try {
+
+      const response = await fetch(`${this.baseUrl}/countries`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(countryData)
+      });
     
-    const newCountry: Country = {
-      id: Date.now().toString(),
-      name: countryData.name,
-      code: countryData.code,
-      currency: countryData.currency,
-      currencySymbol: countryData.currencySymbol,
-      pvRate: countryData.pvRate,
-      status: countryData.status,
-      regions: (countryData.regions || []).map((region: any, index: number) => ({
-        id: (Date.now() + index).toString(),
-        name: region.name,
-        code: region.code,
-        countryId: Date.now().toString(),
-        status: region.status,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    this.mockCountries.push(newCountry);
-    return newCountry;
+      // Check if response is ok
+      if (!response.ok) {
+        console.error('Response not ok:', response.status, response.statusText);
+        
+        // Try to get error text first
+        const errorText = await response.text();
+        console.error('Error response text:', errorText);
+        
+        // Try to parse as JSON if possible
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          // If not JSON, use the text as error message
+          throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+        }
+        
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      const responseText = await response.text();
+            if (!responseText) {
+        throw new Error('Empty response from server');
+      }
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse JSON:', e);
+        console.error('Response text:', responseText);
+        throw new Error('Invalid JSON response from server');
+      }
+      
+            if (!result.data) {
+        console.error('No data field in response:', result);
+        throw new Error('Invalid response format from server');
+      }
+      
+      const country: Country = {
+        id: result.data.id.toString(),
+        name: result.data.name,
+        code: result.data.code,
+        currencySymbol: result.data.currency_symbol,
+        pvRate: result.data.pv_rate,
+        status: result.data.status,
+        regions: [],
+        createdAt: new Date(result.data.created_at || Date.now()),
+        updatedAt: new Date(result.data.updated_at || Date.now())
+      };
+      
+      return country;
+    } catch (error) {
+      console.error('API Client Error:', error);
+      throw error;
+    }
   }
 
   async updateCountry(id: string, countryData: Partial<Country>): Promise<Country> {

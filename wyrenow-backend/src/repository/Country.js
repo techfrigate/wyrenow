@@ -76,37 +76,45 @@ async function findCountryByCode(code) {
     return result[0][0];
 }
 
-// Create new country
-async function createCountry(countryData) {
-    const connection = await pool.getConnection();
+const createCountry = async (countryData) => {
+    let connection;
     try {
-        const query = `
-            INSERT INTO countries (name, code, currency, currency_symbol, pv_rate, status)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `;
         
+        const { name, code, currency, currency_symbol, pv_rate, status } = countryData;
+                if (!name || !code || !currency_symbol) {
+            throw new Error('Missing required fields: name, code, currency_symbol');
+        }
+                connection = await pool.getConnection();
+        
+        const sql = 'INSERT INTO countries (name, code, currency, currency_symbol, pv_rate, status) VALUES (?, ?, ?, ?, ?, ?)';
         const values = [
-            countryData.name,
-            countryData.code.toUpperCase(),
-            countryData.currency,
-            countryData.currency_symbol,
-            countryData.pv_rate,
-            countryData.status || 'active'
-        ];
+            name, 
+            code, 
+            currency || 'Local Currency',
+            currency_symbol, 
+            pv_rate || 1, 
+            status || 'active'
+        ];     
+        const [result] = await connection.execute(sql, values);        
+        return {
+            id: result.insertId,
+            name,
+            code,
+            currency: currency || 'Local Currency',
+            currency_symbol,
+            pv_rate: pv_rate || 1,
+            status: status || 'active'
+        };
         
-        const [result] = await connection.execute(query, values);
-        
-        // Get the inserted record
-        const [rows] = await connection.execute(
-            'SELECT * FROM countries WHERE id = ?', 
-            [result.insertId]
-        );
-        
-        return rows[0];
+    } catch (error) {
+        console.error('Database error in createCountry:', error);
+        throw error;
     } finally {
-        connection.release();
+        if (connection) {
+            connection.release(); 
+        }
     }
-}
+};
 
 // Update country
 async function updateCountry(id, countryData) {

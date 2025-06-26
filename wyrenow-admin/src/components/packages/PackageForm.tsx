@@ -6,14 +6,20 @@ import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { Toggle } from '../ui/Toggle';
 import { PACKAGE_TYPES, DEFAULT_PV_RATES } from '../../utils/constants';
+import { useAppDispatch } from '../../hooks/useAppDispatch';
+import { useAppSelector } from '../../hooks/useAppSelector';
+import { createPackage, updatePackage, clearError } from '../../store/slices/packageSlice';
 
 interface PackageFormProps {
   initialData?: Package | null;
-  onSubmit: (data: any) => void;
+  onSuccess?: () => void;
   onCancel: () => void;
 }
 
-export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProps) {
+export function PackageForm({ initialData, onSuccess, onCancel }: PackageFormProps) {
+  const dispatch = useAppDispatch();
+  const { loading, error } = useAppSelector((state) => state.packages);
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -53,6 +59,13 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
       }));
     }
   }, [formData.pv, autoCalculate]);
+
+  // Clear Redux error when component mounts or form data changes
+  useEffect(() => {
+    if (error) {
+      dispatch(clearError());
+    }
+  }, [formData, dispatch]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -108,7 +121,7 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -118,11 +131,40 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
       features: formData.features.filter(f => f.trim() !== '')
     };
 
-    onSubmit(submitData);
+    try {
+      if (initialData) {
+        // Update existing package
+        const result = await dispatch(updatePackage({ 
+          id: initialData.id, 
+          data: submitData 
+        })).unwrap();
+        
+        if (result) {
+          onSuccess?.();
+        }
+      } else {
+        // Create new package
+        const result = await dispatch(createPackage(submitData)).unwrap();
+        
+        if (result) {
+          onSuccess?.();
+        }
+      }
+    } catch (error) {
+      // Error is handled by Redux state
+      console.error('Failed to save package:', error);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Display Redux error if any */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="md:col-span-2">
           <Input
@@ -132,6 +174,7 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
             error={errors.name}
             required
             placeholder="Enter package name"
+            disabled={loading}
           />
         </div>
 
@@ -141,6 +184,7 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
             value={formData.description}
             onChange={(e) => handleInputChange('description', e.target.value)}
             placeholder="Enter package description"
+            disabled={loading}
           />
         </div>
 
@@ -150,6 +194,7 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
           onChange={(e) => handleInputChange('type', e.target.value)}
           options={PACKAGE_TYPES}
           required
+          disabled={loading}
         />
 
         <div>
@@ -161,6 +206,7 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
             error={errors.bottles}
             required
             min="1"
+            disabled={loading}
           />
         </div>
 
@@ -173,6 +219,7 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
             error={errors.pv}
             required
             min="1"
+            disabled={loading}
           />
         </div>
 
@@ -181,19 +228,20 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
             label="Auto-calculate prices from PV"
             checked={autoCalculate}
             onChange={setAutoCalculate}
+            disabled={loading}
           />
         </div>
 
         <div>
           <Input
-            label="Price in Nigerian Naira (₦)"
+            label="Price (₦)"
             type="number"
             value={formData.priceNGN}
             onChange={(e) => handleInputChange('priceNGN', parseInt(e.target.value) || 0)}
             error={errors.priceNGN}
             required
             min="1"
-            disabled={autoCalculate}
+            disabled={autoCalculate || loading}
           />
         </div>
 
@@ -206,7 +254,7 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
             error={errors.priceGHS}
             required
             min="1"
-            disabled={autoCalculate}
+            disabled={autoCalculate || loading}
           />
         </div>
       </div>
@@ -224,6 +272,7 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
                 onChange={(e) => handleFeatureChange(index, e.target.value)}
                 placeholder={`Feature ${index + 1}`}
                 className="flex-1"
+                disabled={loading}
               />
               {formData.features.length > 1 && (
                 <Button
@@ -231,6 +280,7 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
                   variant="danger"
                   size="sm"
                   onClick={() => removeFeature(index)}
+                  disabled={loading}
                 >
                   Remove
                 </Button>
@@ -242,6 +292,7 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
             variant="secondary"
             size="sm"
             onClick={addFeature}
+            disabled={loading}
           >
             Add Feature
           </Button>
@@ -254,6 +305,7 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
           label="Package is active"
           checked={formData.status === 'active'}
           onChange={(checked) => handleInputChange('status', checked ? 'active' : 'inactive')}
+          disabled={loading}
         />
       </div>
 
@@ -263,11 +315,23 @@ export function PackageForm({ initialData, onSubmit, onCancel }: PackageFormProp
           type="button"
           variant="secondary"
           onClick={onCancel}
+          disabled={loading}
         >
           Cancel
         </Button>
-        <Button type="submit">
-          {initialData ? 'Update Package' : 'Create Package'}
+        <Button 
+          type="submit" 
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              {initialData ? 'Updating...' : 'Creating...'}
+            </>
+          ) : (
+            <>
+              {initialData ? 'Update Package' : 'Create Package'}
+            </>
+          )}
         </Button>
       </div>
     </form>

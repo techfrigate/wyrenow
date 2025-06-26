@@ -44,15 +44,24 @@ async function getCountryById(id) {
     return country;
 }
 
-// Create new country
 async function createCountryService(countryData) {
-    // Check if country code already exists
-    const existingCountry = await findCountryByCode(countryData.code);
-    if (existingCountry) {
-        throw new AppError('Country with this code already exists', 409);
+    try {
+        console.log('Service creating country:', countryData);
+        
+        // Check if country code already exists
+        const existingCountry = await findCountryByCode(countryData.code);
+        if (existingCountry) {
+            throw new AppError('Country with this code already exists', 409);
+        }
+        
+        const result = await createCountry(countryData);
+        console.log('Country created successfully:', result);
+        
+        return result;
+    } catch (error) {
+        console.error('Service error:', error);
+        throw error;
     }
-    
-    return await createCountry(countryData);
 }
 
 // Update country

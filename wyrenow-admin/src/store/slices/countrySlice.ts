@@ -35,10 +35,13 @@ export const createCountry = createAsyncThunk(
       const newCountry = await apiClient.createCountry(countryData);
       return newCountry;
     } catch (error) {
-      return rejectWithValue('Failed to create country');
+      console.error('Redux: Error creating country:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create country';
+      return rejectWithValue(errorMessage);
     }
   }
 );
+
 
 export const updateCountry = createAsyncThunk(
   'countries/updateCountry',

@@ -1,4 +1,4 @@
-const PackageRepository = require('../repository/PackageRepository');
+const PackageRepository = require('../repository/Package');
 const { errorResponse } = require('../utils/helpers');
 
 const getAllPackages = async (filters) => {
