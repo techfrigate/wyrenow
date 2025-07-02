@@ -72,30 +72,6 @@ export interface ActivityItem {
   adminName: string;
 }
 
-// export interface TableColumn<T> {
-//   key: keyof T;
-//   title: string;
-//   sortable?: boolean;
-//   filterable?: boolean;
-//   width?: string;
-//   render?: (value: any, row: T) => React.ReactNode;
-  
-//   filterValue?: string;
-//   onFilterChange?: (value: string) => void;
-// }
-
-// export interface TableProps<T> {
-//   data: T[];
-//   columns: TableColumn<T>[];
-//   loading?: boolean;
-//   onSort?: (column: string, direction: 'asc' | 'desc') => void;
-//   onFilter?: (filters: Record<string, string>) => void;
-//   onPageChange?: (page: number) => void;
-//   currentPage?: number;
-//   totalPages?: number;
-//   pageSize?: number;
-// }
-
 export interface TableColumn<T> {
   key: keyof T;
   title: string;
