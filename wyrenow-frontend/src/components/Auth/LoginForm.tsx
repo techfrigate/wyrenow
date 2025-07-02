@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Mail, Lock, Crown } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { login } from '../../redux/slices/authSlice';
+import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 
 interface LoginFormData {
   email: string;
@@ -12,21 +13,24 @@ interface LoginFormData {
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [loginError, setLoginError] = useState('');
-  const { login, isLoading } = useAuth();
   const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
 
+ const dispatch =  useAppDispatch();
+ const {loading, error,isAuthenticated} =  useAppSelector((state)=> state.auth);
+ 
   const onSubmit = async (data: LoginFormData) => {
-    setLoginError('');
-    const success = await login(data.email, data.password);
-    
-    if (success) {
-      navigate('/dashboard');
-    } else {
-      setLoginError('Invalid email or password. Try demo@wyrenow.com / password');
-    }
+    dispatch(login(data));
   };
+
+ 
+
+  useEffect(()=>{
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  },[isAuthenticated])
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-gray-900 dark:to-gray-800 px-4">
@@ -41,18 +45,13 @@ export default function LoginForm() {
             <p className="text-gray-600 dark:text-gray-400 mt-2">Sign in to your WyreNow account</p>
           </div>
 
-          {/* Demo Credentials */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-            <p className="text-sm text-blue-800 dark:text-blue-300 font-medium mb-2">Demo Credentials:</p>
-            <p className="text-sm text-blue-700 dark:text-blue-400">Email: demo@wyrenow.com</p>
-            <p className="text-sm text-blue-700 dark:text-blue-400">Password: password</p>
-          </div>
+       
 
           {/* Login Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {loginError && (
+            {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                <p className="text-sm text-red-800 dark:text-red-300">{loginError}</p>
+                <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
               </div>
             )}
 
@@ -115,8 +114,8 @@ export default function LoginForm() {
               )}
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
+            <div className="flex items-center justify-end">
+              {/* <div className="flex items-center">
                 <input
                   {...register('rememberMe')}
                   id="remember-me"
@@ -127,9 +126,9 @@ export default function LoginForm() {
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
                   Remember me
                 </label>
-              </div>
+              </div> */}
 
-              <div className="text-sm">
+              <div className="text-sm self-end">
                 <Link
                   to="/forgot-password"
                   className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
@@ -141,14 +140,14 @@ export default function LoginForm() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={loading}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          {/* <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Don't have an account?{' '}
               <Link
@@ -158,7 +157,7 @@ export default function LoginForm() {
                 Sign up now
               </Link>
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

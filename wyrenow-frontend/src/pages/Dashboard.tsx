@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { useAppSelector } from '../hooks/redux';
 
 // Mock data for charts
 const earningsData = [
@@ -45,7 +46,7 @@ const bonusBreakdown = [
 ];
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user } =  useAppSelector((state) => state.auth);
   type Wallet = {
     totalEarnings?: number;
     earningsBalance?: number;
@@ -53,9 +54,7 @@ export default function Dashboard() {
   };
 
   const { wallet = {}, recentBonuses = [], currency = 'NGN' } = (useApp() || {}) as { wallet?: Wallet, recentBonuses?: any[], currency?: string };
-  
-  console.log("Dashboard rendering", { user, wallet, currency });
-
+ 
   // ✅ Fixed: Removed TypeScript syntax
   const formatCurrency = (amount: number) => {
     const symbol = currency === 'NGN' ? '₦' : 'GH₵';

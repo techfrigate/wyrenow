@@ -8,7 +8,7 @@ const usernameService = require('../services/usernameService');
  */
 const getUserDetails = async (req, res, next) => {
   const { username } = req.body;
-   console.log("username",username)
+   
   try {
   
     if (!username) {
@@ -18,12 +18,18 @@ const getUserDetails = async (req, res, next) => {
         }, 400);
     }
     const userData = await usernameService.getUserDetails(username);
+  
+    if (!userData.registration_data) {
+        return errorResponse(res, {
+            message: 'User not found or invalid username',
+            success: false
+        }, 404);
+    }
      successResponse(res, {
             message: 'User fetched successfully',
             data: userData
         });
   } catch (error) {
-    console.log(error)
       next(error);
   }
 };

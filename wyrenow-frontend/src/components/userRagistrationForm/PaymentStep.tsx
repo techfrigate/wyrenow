@@ -4,6 +4,8 @@ import { Card, FormInput } from '../ui';
 import { FormData, FormErrors, RegistrationPackage, Country, Region } from '../../types';
 import { formatCurrency } from '../../utils';
 import { WALLET_BALANCE } from '../../constants';
+import { useSelector } from 'react-redux';
+import { selectCountriesState } from '../../redux/slices/countrySlice';
 
 interface PaymentStepProps {
   formData: FormData;
@@ -21,14 +23,13 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   formData,
   errors,
   currency,
-  selectedCountry,
   selectedPackage,
   grandTotal,
   showWalletPin,
   setShowWalletPin,
   updateFormData
 }) => {
-  const selectedRegion = selectedCountry?.regions.find(r => r.id === Number(formData.region));
+  const {selectedCountry,selectedRegion} = useSelector(selectCountriesState)
   const packagePrice = selectedPackage?.price || 0;
 
   return (

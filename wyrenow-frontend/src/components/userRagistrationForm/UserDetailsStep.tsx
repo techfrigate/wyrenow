@@ -2,6 +2,10 @@ import React from 'react';
 import { FormInput } from '../ui';
 import { FormData, FormErrors } from '../../types';
 import { Eye, EyeOff } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getNewUserData, selectRegistration } from '../../redux/slices/ragistrationSlice';
+import { useAppSelector } from '../../hooks/redux';
+import LoadingSpinner from '../Layout/LoadingSpinner';
 
 interface UserDetailsStepProps {
   formData: FormData;
@@ -11,6 +15,7 @@ interface UserDetailsStepProps {
   setShowPassword: (show: boolean) => void;
   setShowPin: (show: boolean) => void;
   updateFormData: (data: Partial<FormData>) => void;
+  validUserLoading: boolean
 }
 
 const UserDetailsStep: React.FC<UserDetailsStepProps> = ({
@@ -20,12 +25,32 @@ const UserDetailsStep: React.FC<UserDetailsStepProps> = ({
   showPin,
   setShowPassword,
   setShowPin,
-  updateFormData
+  updateFormData,
+  validUserLoading
 }) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+  const dispatch  =  useDispatch();
+ // Declare timeid outside the component or use useRef
+let timeid: NodeJS.Timeout;
+const {loading,error,newUserData} = useAppSelector(selectRegistration);
+
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    
+    if(name === 'newUsername' && value !== ''){
+        // Clear existing timeout to prevent multiple API calls
+        clearTimeout(timeid);
+        timeid = setTimeout(() => {
+            dispatch(getNewUserData(value));
+        }, 2000);
+      }else {
+       clearTimeout(timeid);
+     }
+
     updateFormData({ [name]: value });
-  };
+};
+
+
 
   return (
     <div className="space-y-6">
@@ -37,6 +62,8 @@ const UserDetailsStep: React.FC<UserDetailsStepProps> = ({
           onChange={handleChange}
           placeholder="Enter new username"
           required
+          iconPosition='right'
+          icon={loading.newUser?<LoadingSpinner size='sm' variant='primary'/>:undefined}
           error={errors.newUsername}
         />
 
@@ -48,6 +75,7 @@ const UserDetailsStep: React.FC<UserDetailsStepProps> = ({
           onChange={handleChange}
           placeholder="Enter email address"
           required
+          
           error={errors.email}
         />
       </div>

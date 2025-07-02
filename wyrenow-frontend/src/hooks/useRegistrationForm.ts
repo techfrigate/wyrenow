@@ -12,6 +12,10 @@ import {
 import { validateStep } from '../utils/validation';
 import { REGISTRATION_PACKAGES } from '../constants';
 import axios from 'axios';
+import { checkSponsorPositionsById, clearAvailablePositions, findAvailablePositions, placeUserInBinaryTree } from '../redux/slices/ragistrationSlice';
+import { useNavigate } from 'react-router-dom';
+import { set } from 'date-fns';
+import toast from 'react-hot-toast';
 
 const initialFormData: FormData = {
   // Geographic
@@ -21,8 +25,9 @@ const initialFormData: FormData = {
   // Sponsor Information
   sponsorUsername: '',
   sponsorName: '',
-  placementUsername: '',
-  placementName: '',
+  placementUserid:0,
+  placementLeg: '',
+  placementUsername:'',
   
   // User Details
   newUsername: '',
@@ -41,8 +46,7 @@ const initialFormData: FormData = {
   walletPin: ''
 };
 const BASE_URL =  import.meta.env.VITE_APP_API_URL
-
-console.log(BASE_URL)
+ 
 export const useRegistrationForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -51,14 +55,37 @@ export const useRegistrationForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const [showWalletPin, setShowWalletPin] = useState(false);
+  const[showAlert,setShowAlert] = useState(false);
   const [sponsorData,setSponsorData] =  useState(null);
   const dispatch = useDispatch<AppDispatch>();
   const { countries } = useSelector(selectCountriesState);
-  
+  const[placementLoading,setPlacementLoading] = useState(false)
+  const {newUserData,availablePositions} =  useSelector((state: any) => state.registration);
+  const[validUserLoading,setValidUserLoading] = useState(false)
+  const navigate = useNavigate();
   useEffect(() => {
     dispatch(fetchCountries());
   }, [dispatch]);
   
+  useEffect(()=>{
+   if(newUserData){
+     setFormData((prev) => ({
+       ...prev,
+       newUsername: newUserData.UserName,
+       firstName: newUserData.FullName ? newUserData.FullName.split(' ')[0] : '',
+       lastName: newUserData.FullName ? newUserData.FullName.split(' ').slice(1).join(' '): '',
+       email: newUserData.Email,
+   }))
+    }else{
+      setFormData((pre)=>({
+        ...pre,
+        firstName: '',
+        lastName: '',
+        email: ''
+      }));
+ 
+    }
+  },[newUserData])
   // Find selected country and package
   
   const selectedCountry = countries?.find(c => c.id === Number(formData.country));
@@ -76,56 +103,72 @@ export const useRegistrationForm = () => {
   const updateFormData = (updates: Partial<FormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
   };
+
+  const checkSponsorPositionsById = async (sponsorId: number) => {
+    try {
+      const resposne =  await axios.get(`${BASE_URL}/registration/sponsor/id/${sponsorId}`);
+ 
+       if(resposne.data.success){
+        const { left_leg_status, right_leg_status } = resposne.data.data;
+ 
+        if(left_leg_status === 'filled' && right_leg_status === 'filled'){
+          setShowAlert(true);
+          updateFormData({ placementUsername: '', placementUserid: 0, placementLeg: '' });
+          dispatch(clearAvailablePositions());
+       } else{
+          setShowAlert(false);
+       }
+      }
+        return resposne.data
+    } catch (error) {
+      console.log('Error checking sponsor positions:', error);
+    }
+  };
   
   /**
    * Handles sponsor username search and validation
    */
-  const handleSponsorUsernameChange = async (username: string) => {
+  const handleSponsorUsernameChange = async (username: string,check:boolean) => {
     updateFormData({ sponsorUsername: username });
     try {
          setIsLoading(true);
-         const resposne  = await axios.post(`${BASE_URL}/username`,{
-           username :  username
-         });
-         console.log(JSON.parse(resposne.data.data.registration_data)
-,"response or username")
-
-         const SponsorNamr = JSON.parse(resposne.data.data.registration_data).AccountName;
-          updateFormData({ sponsorName: SponsorNamr });
+         const resposne  = await axios.get(`${BASE_URL}/registration/check-username/${username}`);
+          const {first_name, last_name} = resposne.data.data;
+          updateFormData({ sponsorName: `${first_name} ${last_name}` });
           setErrors(prev => ({ ...prev, sponsorUsername: '' }));
-          setSponsorData(JSON.parse(resposne.data.data.registration_data));
-
+          setSponsorData(resposne.data.data);
+          if(check){
+             checkSponsorPositionsById(resposne.data.data.id);
+          }
     } catch (error) {
-        updateFormData({ sponsorName: '' });
+      dispatch(clearAvailablePositions())
+        updateFormData({ sponsorName: '' , placementUsername: '', placementUserid: 0, placementLeg: '' });
           setErrors(prev => ({ ...prev, sponsorUsername: 'Sponsor not found or not in your downline' }));
     } finally{
       setIsLoading(false);
     }
-     
-    
-  
   };
   
   /**
    * Handles placement username search and validation
    */
-  const handlePlacementUsernameChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const username =  e.target.value;
-    updateFormData({ placementUsername: username });
-    
-    if (username.length >= 3) {
-      setIsLoading(true);
-      // Simulate API call to fetch placement name
-      setTimeout(() => {
-        if (username === 'placement456') {
-          updateFormData({ placementName: 'Jane Smith' });
+  const handlePlacementUsernameChange = async (leg: 'left' | 'right'| 'system') => {
+    let legData =  leg==='system' ? 'right' : leg;
+    setShowAlert(false);
+    setPlacementLoading(true);
+    try {
+      const res =  await dispatch(findAvailablePositions({
+         userId: sponsorData?.id ,
+         leg:legData
+      })).unwrap();
+         updateFormData({placementUserid: res.data.user_id , placementLeg: leg, placementUsername:  res.data.first_name + ' ' + res.data.last_name });
           setErrors(prev => ({ ...prev, placementUsername: '' }));
-        } else {
-          updateFormData({ placementName: '' });
-          setErrors(prev => ({ ...prev, placementUsername: 'Placement user not found' }));
-        }
-        setIsLoading(false);
-      }, 1000);
+      
+    } catch (error) {
+      console.log('Error fetching available positions:', error);
+ 
+    }finally{
+     setPlacementLoading(false);
     }
   };
   
@@ -181,9 +224,33 @@ export const useRegistrationForm = () => {
   /**
    * Moves to the next step if validation passes
    */
-  const nextStep = () => {
+  const nextStep = async () => {
     if (validateCurrentStep()) {
+      if(currentStep === 3){
+        setValidUserLoading(true);
+        try {
+          const res = await axios.post(`${BASE_URL}/registration/validate-user`,{
+            username: formData.newUsername,
+            email: formData.email,
+            phone: formData.phone
+          });
+
+          if(res.data.success){
+            if(res.data.data.length){
+              toast.error("user Already exist with this email or phone number or username");
+            }else{
+             setCurrentStep(prev => Math.min(prev + 1, 5));
+            }
+          }
+        } catch (error) {
+          toast.error(error?.response?.data?.message  ||  'An unexpected error occurred');
+        } finally{
+          setValidUserLoading(false);
+        }
+      }else{
       setCurrentStep(prev => Math.min(prev + 1, 5));
+      }
+      
     }
   };
   
@@ -201,15 +268,45 @@ export const useRegistrationForm = () => {
     if (!validateCurrentStep()) return;
 
     setIsLoading(true);
-    
-    // Simulate registration process
-    setTimeout(() => {
-      setIsLoading(false);
-      alert('Registration completed successfully! Username: ' + formData.newUsername);
-      // Reset form or redirect
-    }, 2000);
+      const registerData= {
+        username: formData.newUsername,
+        sponsor_username: formData.sponsorUsername,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        transaction_pin: formData.transactionPin,
+        country_id:  Number(formData.country),
+        region_id: Number(formData.region),
+        package_id: 1,
+        placement_user_id: formData.placementUserid,
+        placementLeg: formData.placementLeg||availablePositions?.available_position,
+      }
+
+       dispatch(placeUserInBinaryTree(registerData)).unwrap()
+        .then((response) => {
+          if (response.success) {
+            toast.success(response.message || 'Registration successful');
+            dispatch(clearAvailablePositions())
+             setFormData(initialFormData);
+             setCurrentStep(1);
+             setErrors({}); 
+             setShowAlert(false);
+             setSponsorData(null);
+            navigate('/dashboard');
+          } else {
+            toast.error(response.message || 'Registration failed');
+          }
+        })
+        .catch((error) => {
+          toast.error(error || 'Registration failed');
+        }).finally(() => {
+          setIsLoading(false);
+        });
   };
   
+
   return {
     currentStep,
     formData,
@@ -235,6 +332,11 @@ export const useRegistrationForm = () => {
     removeFromCart,
     nextStep,
     prevStep,
-    handleSubmit
+    handleSubmit,
+    showAlert,
+    setErrors,
+    placementLoading,
+    setPlacementLoading,
+    validUserLoading
   };
 };

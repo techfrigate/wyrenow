@@ -1,4 +1,4 @@
-import { User, Package, Rank, TreeNode, Wallet, Bonus, Transaction, RepurchaseRecord, ServiceCenter, Megastore, LeadershipPool } from '../types';
+import { User, Package, Rank, TreeNode, Wallet, Bonus, Transaction, RepurchaseRecord, ServiceCenter, Megastore, LeadershipPool ,Commission, Withdrawal,} from '../types';
 
 // Enhanced User Interface for complete data
 export interface EnhancedUser extends User {
@@ -21,6 +21,8 @@ export interface EnhancedUser extends User {
   achievements: Achievement[];
   complianceStatus: 'compliant' | 'warning' | 'suspended';
 }
+
+
 
 export interface Notification {
   id: string;
@@ -116,207 +118,7 @@ export interface MonthlyReport {
   rank: string;
   achievements: string[];
 }
-
-// All Packages with detailed information
-export const allPackages: Package[] = [
-  {
-    id: 'beginner',
-    name: 'Beginner',
-    pv: 20,
-    bv: 20,
-    bottles: 2,
-    costNGN: 10500,
-    costGHS: 240,
-    benefits: ['2 Bottles Premium Health Supplement', '20 PV/BV Points', 'Basic Starter Kit', 'Digital Training Materials', 'Mobile App Access']
-  },
-  {
-    id: 'starter',
-    name: 'Starter',
-    pv: 30,
-    bv: 30,
-    bottles: 3,
-    costNGN: 15750,
-    costGHS: 360,
-    benefits: ['3 Bottles Premium Health Supplement', '30 PV/BV Points', 'Enhanced Starter Kit', 'Welcome Bonus Eligibility', 'Priority Customer Support']
-  },
-  {
-    id: 'regular',
-    name: 'Regular',
-    pv: 40,
-    bv: 40,
-    bottles: 4,
-    costNGN: 21000,
-    costGHS: 480,
-    benefits: ['4 Bottles Premium Health Supplement', '40 PV/BV Points', 'Regular Member Benefits', 'Monthly Newsletter', 'Retail Discount 5%']
-  },
-  {
-    id: 'executive',
-    name: 'Executive',
-    pv: 60,
-    bv: 60,
-    bottles: 6,
-    costNGN: 31500,
-    costGHS: 720,
-    benefits: ['6 Bottles Premium Health Supplement', '60 PV/BV Points', 'Executive Status Badge', 'Leadership Bonus Eligibility', 'Advanced Training Access', 'Retail Discount 7%']
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    pv: 80,
-    bv: 80,
-    bottles: 8,
-    costNGN: 42000,
-    costGHS: 960,
-    benefits: ['8 Bottles Premium Health Supplement', '80 PV/BV Points', 'Premium Member Status', 'Higher Commission Rates', 'VIP Support', 'Retail Discount 8%']
-  },
-  {
-    id: 'platinum',
-    name: 'Platinum',
-    pv: 120,
-    bv: 120,
-    bottles: 12,
-    costNGN: 63000,
-    costGHS: 1440,
-    benefits: ['12 Bottles Premium Health Supplement', '120 PV/BV Points', 'Platinum Status Recognition', 'Advanced Benefits Package', 'Exclusive Events Access', 'Retail Discount 9%']
-  },
-  {
-    id: 'diamond',
-    name: 'Diamond',
-    pv: 200,
-    bv: 200,
-    bottles: 20,
-    costNGN: 105000,
-    costGHS: 2400,
-    benefits: ['20 Bottles Premium Health Supplement', '200 PV/BV Points', 'Diamond Status Recognition', 'Maximum Benefits Package', 'Leadership Pool Access', 'Retail Discount 10%']
-  },
-  {
-    id: 'legend',
-    name: 'Legend',
-    pv: 400,
-    bv: 400,
-    bottles: 40,
-    costNGN: 210000,
-    costGHS: 4800,
-    benefits: ['40 Bottles Premium Health Supplement', '400 PV/BV Points', 'Legend Status Recognition', 'Ultimate Benefits Package', 'Global Recognition', 'Maximum Retail Discount 10%', 'Exclusive Legend Events']
-  }
-];
-
-// All Ranks with detailed progression
-export const allRanks: Rank[] = [
-  {
-    id: 'promoter',
-    name: 'Promoter',
-    requirements: {
-      personalPV: 20,
-      packageLevel: 1,
-      teamRequirements: 'Join with any package'
-    },
-    rewards: {
-      cashBonus: 0,
-      privileges: ['Basic Member Access', 'Sponsor Bonus Eligibility']
-    },
-    icon: 'user'
-  },
-  {
-    id: 'senior-promoter',
-    name: 'Senior Promoter',
-    requirements: {
-      personalPV: 40,
-      packageLevel: 3,
-      teamRequirements: '2 direct referrals with Regular package or above'
-    },
-    rewards: {
-      cashBonus: 25000,
-      privileges: ['Enhanced Bonus Rates', 'Team Leadership Tools']
-    },
-    icon: 'star'
-  },
-  {
-    id: 'supervisor',
-    name: 'Supervisor',
-    requirements: {
-      personalPV: 60,
-      packageLevel: 4,
-      teamRequirements: '5 direct referrals, 20 team members'
-    },
-    rewards: {
-      cashBonus: 50000,
-      privileges: ['Supervisor Badge', 'Advanced Training Access', 'Monthly Bonus Pool']
-    },
-    icon: 'shield'
-  },
-  {
-    id: 'manager',
-    name: 'Manager',
-    requirements: {
-      personalPV: 80,
-      packageLevel: 5,
-      teamRequirements: '10 direct referrals, 50 team members'
-    },
-    rewards: {
-      cashBonus: 100000,
-      privileges: ['Manager Status', 'Leadership Bonus', 'VIP Support']
-    },
-    icon: 'briefcase'
-  },
-  {
-    id: 'senior-manager',
-    name: 'Senior Manager',
-    requirements: {
-      personalPV: 120,
-      packageLevel: 6,
-      teamRequirements: '15 direct referrals, 100 team members'
-    },
-    rewards: {
-      cashBonus: 200000,
-      privileges: ['Senior Manager Recognition', 'Higher Commission Rates', 'Exclusive Events']
-    },
-    icon: 'award'
-  },
-  {
-    id: 'director',
-    name: 'Director',
-    requirements: {
-      personalPV: 200,
-      packageLevel: 7,
-      teamRequirements: '25 direct referrals, 250 team members'
-    },
-    rewards: {
-      cashBonus: 500000,
-      privileges: ['Director Status', 'Leadership Pool Access', 'Global Recognition']
-    },
-    icon: 'crown'
-  },
-  {
-    id: 'executive-director',
-    name: 'Executive Director',
-    requirements: {
-      personalPV: 400,
-      packageLevel: 8,
-      teamRequirements: '50 direct referrals, 500 team members'
-    },
-    rewards: {
-      cashBonus: 1000000,
-      privileges: ['Executive Director Recognition', 'Maximum Benefits', 'Board Consideration']
-    },
-    icon: 'gem'
-  },
-  {
-    id: 'global-icon',
-    name: 'Global Icon',
-    requirements: {
-      personalPV: 400,
-      packageLevel: 8,
-      teamRequirements: '100 direct referrals, 1000+ team members, sustained performance'
-    },
-    rewards: {
-      cashBonus: 2000000,
-      privileges: ['Global Icon Status', 'Ultimate Recognition', 'Legacy Benefits']
-    },
-    icon: 'trophy'
-  }
-];
-
+ 
 // Retail Products
 export const retailProducts: RetailProduct[] = [
   {
@@ -366,214 +168,9 @@ export const retailProducts: RetailProduct[] = [
 ];
 
 // Enhanced Users with complete data
-export const enhancedUsers: EnhancedUser[] = [
-  {
-    id: '1',
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    phone: '+234 123 456 7890',
-    country: 'Nigeria',
-    sponsorCode: 'SPONSOR123',
-    package: allPackages[3], // Executive
-    rank: allRanks[2], // Supervisor
-    joinDate: '2024-01-15',
-    isActive: true,
-    profileImage: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-    bankDetails: {
-      accountName: 'John Doe',
-      accountNumber: '1234567890',
-      bankName: 'First Bank Nigeria',
-      routingNumber: '011'
-    },
-    kycStatus: 'verified',
-    twoFactorEnabled: true,
-    lastLogin: '2024-01-20T10:30:00Z',
-    totalDownlines: 156,
-    directReferrals: 22,
-    monthlyPV: 180,
-    monthlyBV: 180,
-    totalPairsThisMonth: 45,
-    awaitingWalletReleaseDate: '2024-02-15',
-    complianceStatus: 'compliant',
-    notifications: [
-      {
-        id: 'n1',
-        type: 'bonus',
-        title: 'New Bonus Earned',
-        message: 'You earned ₦15,000 Direct Sponsor Bonus from Jane Smith upgrade',
-        date: '2024-01-20T08:00:00Z',
-        read: false,
-        actionUrl: '/bonuses'
-      },
-      {
-        id: 'n2',
-        type: 'team',
-        title: 'New Team Member',
-        message: 'Michael Johnson joined your team under left leg',
-        date: '2024-01-19T14:30:00Z',
-        read: false,
-        actionUrl: '/binary-tree'
-      },
-      {
-        id: 'n3',
-        type: 'rank',
-        title: 'Rank Progress Update',
-        message: 'You are 80% towards Manager rank. Keep going!',
-        date: '2024-01-18T12:00:00Z',
-        read: true,
-        actionUrl: '/ranks'
-      }
-    ],
-    achievements: [
-      {
-        id: 'a1',
-        title: 'First Recruit',
-        description: 'Successfully recruited your first team member',
-        icon: 'users',
-        dateEarned: '2024-01-16',
-        reward: 5000,
-        category: 'team'
-      },
-      {
-        id: 'a2',
-        title: 'Supervisor Rank',
-        description: 'Achieved Supervisor rank with outstanding performance',
-        icon: 'shield',
-        dateEarned: '2024-01-18',
-        reward: 50000,
-        category: 'rank'
-      }
-    ]
-  },
-  {
-    id: '2',
-    firstName: 'Jane',
-    lastName: 'Smith',
-    email: 'jane.smith@example.com',
-    phone: '+234 987 654 3210',
-    country: 'Nigeria',
-    sponsorCode: 'JANE2024',
-    package: allPackages[4], // Premium
-    rank: allRanks[3], // Manager
-    joinDate: '2023-12-01',
-    isActive: true,
-    profileImage: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-    bankDetails: {
-      accountName: 'Jane Smith',
-      accountNumber: '0987654321',
-      bankName: 'GTBank Nigeria',
-      routingNumber: '058'
-    },
-    kycStatus: 'verified',
-    twoFactorEnabled: true,
-    lastLogin: '2024-01-20T09:15:00Z',
-    totalDownlines: 89,
-    directReferrals: 15,
-    monthlyPV: 240,
-    monthlyBV: 240,
-    totalPairsThisMonth: 32,
-    complianceStatus: 'compliant',
-    notifications: [],
-    achievements: [
-      {
-        id: 'a3',
-        title: 'Manager Achievement',
-        description: 'Reached Manager rank with exceptional leadership',
-        icon: 'briefcase',
-        dateEarned: '2024-01-10',
-        reward: 100000,
-        category: 'rank'
-      }
-    ]
-  },
-  {
-    id: '3',
-    firstName: 'Michael',
-    lastName: 'Johnson',
-    email: 'michael.johnson@example.com',
-    phone: '+233 123 456 789',
-    country: 'Ghana',
-    sponsorCode: 'MIKE2024',
-    package: allPackages[2], // Regular
-    rank: allRanks[1], // Senior Promoter
-    joinDate: '2024-01-19',
-    isActive: true,
-    profileImage: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-    bankDetails: {
-      accountName: 'Michael Johnson',
-      accountNumber: '1122334455',
-      bankName: 'GCB Bank Ghana',
-      routingNumber: 'GCB'
-    },
-    kycStatus: 'pending',
-    twoFactorEnabled: false,
-    lastLogin: '2024-01-20T07:45:00Z',
-    totalDownlines: 5,
-    directReferrals: 3,
-    monthlyPV: 40,
-    monthlyBV: 40,
-    totalPairsThisMonth: 2,
-    complianceStatus: 'compliant',
-    notifications: [],
-    achievements: []
-  }
-];
+ 
 
-// Binary Tree Structure
-export const binaryTreeData: TreeNode = {
-  user: enhancedUsers[0],
-  leftChild: {
-    user: enhancedUsers[1],
-    leftChild: {
-      user: enhancedUsers[2],
-      totalLeftPV: 0,
-      totalRightPV: 0,
-      totalLeftBV: 0,
-      totalRightBV: 0,
-      level: 3
-    },
-    rightChild: {
-      user: {
-        ...enhancedUsers[2],
-        id: '4',
-        firstName: 'Sarah',
-        lastName: 'Wilson',
-        email: 'sarah.wilson@example.com'
-      },
-      totalLeftPV: 0,
-      totalRightPV: 0,
-      totalLeftBV: 0,
-      totalRightBV: 0,
-      level: 3
-    },
-    totalLeftPV: 40,
-    totalRightPV: 40,
-    totalLeftBV: 40,
-    totalRightBV: 40,
-    level: 2
-  },
-  rightChild: {
-    user: {
-      ...enhancedUsers[1],
-      id: '5',
-      firstName: 'David',
-      lastName: 'Brown',
-      email: 'david.brown@example.com'
-    },
-    totalLeftPV: 0,
-    totalRightPV: 0,
-    totalLeftBV: 0,
-    totalRightBV: 0,
-    level: 2
-  },
-  totalLeftPV: 320,
-  totalRightPV: 80,
-  totalLeftBV: 320,
-  totalRightBV: 80,
-  level: 1
-};
-
+ 
 // Comprehensive Bonuses
 export const allBonuses: Bonus[] = [
   {
@@ -825,6 +422,297 @@ export const retailSales: RetailSale[] = [
   }
 ];
 
+
+export const enhancedUsers: User[] = [
+  {
+    id: '1',
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john.doe@example.com',
+    phone: '+1234567890',
+    profileImage: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
+    isActive: true,
+    joinDate: '2024-01-15',
+    package: { id: '1', name: 'Premium', price: 500 },
+    rank: { id: '1', name: 'Bronze', level: 1 }
+  },
+  {
+    id: '2',
+    firstName: 'Jane',
+    lastName: 'Smith',
+    email: 'jane.smith@example.com',
+    phone: '+1234567891',
+    profileImage: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
+    isActive: true,
+    joinDate: '2024-02-01',
+    package: { id: '2', name: 'Premium', price: 500 },
+    rank: { id: '2', name: 'Silver', level: 2 }
+  },
+  {
+    id: '3',
+    firstName: 'David',
+    lastName: 'Brown',
+    email: 'david.brown@example.com',
+    phone: '+1234567892',
+    profileImage: 'https://images.pexels.com/photos/697509/pexels-photo-697509.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
+    isActive: true,
+    joinDate: '2024-02-10',
+    package: { id: '1', name: 'Premium', price: 500 },
+    rank: { id: '1', name: 'Bronze', level: 1 }
+  },
+  {
+    id: '4',
+    firstName: 'Sarah',
+    lastName: 'Wilson',
+    email: 'sarah.wilson@example.com',
+    phone: '+1234567893',
+    profileImage: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
+    isActive: false,
+    joinDate: '2024-02-15',
+    package: { id: '3', name: 'Basic', price: 200 },
+    rank: { id: '1', name: 'Bronze', level: 1 }
+  },
+  {
+    id: '5',
+    firstName: 'Michael',
+    lastName: 'Johnson',
+    email: 'michael.johnson@example.com',
+    phone: '+1234567894',
+    profileImage: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=1',
+    isActive: true,
+    joinDate: '2024-02-20',
+    package: { id: '2', name: 'Premium', price: 500 },
+    rank: { id: '1', name: 'Bronze', level: 1 }
+  }
+];
+
+
+// Binary Tree Data with BV (Business Volume) included
+export const binaryTreeData: TreeNode = {
+  user: enhancedUsers[0],
+  totalLeftPV: 320,
+  totalRightPV: 80,
+  totalLeftBV: 1250,
+  totalRightBV: 650,
+  leftChild: {
+    user: enhancedUsers[1],
+    totalLeftPV: 150,
+    totalRightPV: 40,
+    totalLeftBV: 800,
+    totalRightBV: 450,
+    leftChild: {
+      user: enhancedUsers[3],
+      totalLeftPV: 0,
+      totalRightPV: 0,
+      totalLeftBV: 0,
+      totalRightBV: 0
+    },
+    rightChild: {
+      user: enhancedUsers[4],
+      totalLeftPV: 0,
+      totalRightPV: 0,
+      totalLeftBV: 0,
+      totalRightBV: 0
+    }
+  },
+  rightChild: {
+    user: enhancedUsers[2],
+    totalLeftPV: 0,
+    totalRightPV: 0,
+    totalLeftBV: 0,
+    totalRightBV: 0
+  }
+};
+
+// Binary Tree Statistics
+export const binaryTreeStats: BinaryTreeStats = {
+  leftLegPV: 2450,
+  rightLegPV: 1820,
+  leftLegMembers: 15,
+  rightLegMembers: 12,
+  totalPairs: 142,
+  monthlyPairs: 28,
+  weeklyPairs: 7,
+  unusedLeftPV: 630,
+  unusedRightPV: 280
+};
+
+ 
+// Notifications
+export const notifications: Notification[] = [
+  {
+    id: '1',
+    title: 'New Team Member',
+    message: 'Sarah Wilson joined your left leg',
+    type: 'success',
+    timestamp: '2024-03-15T10:30:00Z',
+    read: false
+  },
+  {
+    id: '2',
+    title: 'Commission Earned',
+    message: 'You earned $50 from binary bonus',
+    type: 'success',
+    timestamp: '2024-03-15T09:15:00Z',
+    read: false
+  },
+  {
+    id: '3',
+    title: 'Rank Achievement',
+    message: 'Congratulations! You achieved Silver rank',
+    type: 'info',
+    timestamp: '2024-03-14T14:20:00Z',
+    read: true
+  }
+];
+
+
+// Commissions
+export const commissions: Commission[] = [
+  {
+    id: '1',
+    type: 'Binary Bonus',
+    amount: 125.50,
+    fromUser: 'System',
+    date: '2024-03-15',
+    status: 'paid'
+  },
+  {
+    id: '2',
+    type: 'Direct Referral',
+    amount: 75.00,
+    fromUser: 'Jane Smith',
+    date: '2024-03-14',
+    status: 'paid'
+  },
+  {
+    id: '3',
+    type: 'Level Commission',
+    amount: 25.00,
+    fromUser: 'David Brown',
+    date: '2024-03-13',
+    status: 'pending'
+  }
+];
+
+// Withdrawals
+export const withdrawals: Withdrawal[] = [
+  {
+    id: '1',
+    amount: 500.00,
+    method: 'Bank Transfer',
+    accountDetails: '**** **** **** 1234',
+    date: '2024-03-10',
+    status: 'completed',
+    fees: 5.00
+  },
+  {
+    id: '2',
+    amount: 250.00,
+    method: 'PayPal',
+    accountDetails: 'user@example.com',
+    date: '2024-03-08',
+    status: 'processing',
+    fees: 2.50
+  }
+];
+
+
+// Packages
+export const allPackages: Package[] = [
+  {
+    id: '1',
+    name: 'Basic',
+    price: 100,
+    pv: 50,
+    benefits: [
+      'Access to basic products',
+      '5% commission rate',
+      'Basic support'
+    ]
+  },
+  {
+    id: '2',
+    name: 'Premium',
+    price: 300,
+    pv: 200,
+    benefits: [
+      'Access to all products',
+      '10% commission rate',
+      'Priority support',
+      'Marketing materials'
+    ],
+    isPopular: true
+  },
+  {
+    id: '3',
+    name: 'VIP',
+    price: 500,
+    pv: 400,
+    benefits: [
+      'Access to all products',
+      '15% commission rate',
+      'Premium support',
+      'Marketing materials',
+      'Personal mentor'
+    ]
+  }
+];
+
+
+// Ranks
+export const allRanks: Rank[] = [
+  {
+    id: '1',
+    name: 'Bronze',
+    level: 1,
+    requirements: {
+      personalSales: 100,
+      groupSales: 500,
+      directReferrals: 2
+    },
+    benefits: [
+      '5% commission rate',
+      'Basic recognition'
+    ],
+    commissionRate: 0.05
+  },
+  {
+    id: '2',
+    name: 'Silver',
+    level: 2,
+    requirements: {
+      personalSales: 300,
+      groupSales: 1500,
+      directReferrals: 5
+    },
+    benefits: [
+      '8% commission rate',
+      'Silver badge',
+      'Monthly bonus'
+    ],
+    commissionRate: 0.08
+  },
+  {
+    id: '3',
+    name: 'Gold',
+    level: 3,
+    requirements: {
+      personalSales: 500,
+      groupSales: 3000,
+      directReferrals: 10
+    },
+    benefits: [
+      '12% commission rate',
+      'Gold badge',
+      'Quarterly bonus',
+      'Leadership training'
+    ],
+    commissionRate: 0.12
+  }
+];
+
+
 // Team Members with complete hierarchy
 export const teamMembers: TeamMember[] = [
   {
@@ -868,21 +756,7 @@ export const teamMembers: TeamMember[] = [
   }
 ];
 
-// Binary Tree Statistics
-export const binaryTreeStats: BinaryTreeStats = {
-  leftLegPV: 1240,
-  rightLegPV: 680,
-  leftLegBV: 1240,
-  rightLegBV: 680,
-  leftLegMembers: 89,
-  rightLegMembers: 67,
-  totalPairs: 34,
-  unusedLeftPV: 560,
-  unusedRightPV: 0,
-  weeklyPairs: 8,
-  monthlyPairs: 34
-};
-
+ 
 // Earnings Breakdown
 export const earningsBreakdown: EarningsBreakdown = {
   directSponsorBonus: 125000,
@@ -1117,6 +991,7 @@ export const goalData = [
   }
 ];
 
+
 export default {
   enhancedUsers,
   allPackages,
@@ -1145,3 +1020,13 @@ export default {
   complianceData,
   goalData
 };
+
+
+
+ 
+
+
+
+
+
+

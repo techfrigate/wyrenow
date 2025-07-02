@@ -85,6 +85,7 @@ async function deleteCountryService(id) {
 
 // Get regions for a country
 async function getCountryRegionsService(countryId, filters) {
+    console.log('Fetching regions for country ID:', countryId);
     const country = await findCountryById(countryId);
     if (!country) {
         throw new AppError('Country not found', 404);
