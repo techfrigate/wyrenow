@@ -1,4 +1,4 @@
- const {
+const {
     findAllCountries,
     findCountryById,
     findCountryByCode,
@@ -9,11 +9,13 @@
     addRegionToCountry,
     updateRegion,
     deleteRegion,
-    countCountries
+    countCountries,
+    createRegion
 } = require('../repository/Country');
 const { errorResponse } = require('../utils/helpers');
+// countryService.js
+const { pool } = require('../config/database');
 
-// Get all countries with pagination and filters
 async function getAllCountries(filters) {
     try {
         const countries = await findAllCountries(filters);
@@ -44,15 +46,53 @@ async function getCountryById(id) {
     return country;
 }
 
-// Create new country
 async function createCountryService(countryData) {
-    // Check if country code already exists
-    const existingCountry = await findCountryByCode(countryData.code);
-    if (existingCountry) {
-        throw new AppError('Country with this code already exists', 409);
-    }
+    const connection = await pool.getConnection();
     
-    return await createCountry(countryData);
+    try {
+        console.log('Service creating country with regions:', countryData);
+        
+        await connection.beginTransaction();
+        
+        const existingCountry = await findCountryByCode(countryData.code);
+        if (existingCountry) {
+            throw new AppError('Country with this code already exists', 409);
+        }
+        
+        // Ensure the new schema fields have default values if not provided
+        const countryDataWithDefaults = {
+            ...countryData,
+            product_pv_rate: countryData.product_pv_rate || 1200.00,
+            bonus_pv_rate: countryData.bonus_pv_rate || 525.00,
+            platform_margin: countryData.platform_margin || 2000.00,
+            cross_country_cap_percentage: countryData.cross_country_cap_percentage || 30.00
+        };
+        
+        const countryResult = await createCountry(countryDataWithDefaults, connection);
+        console.log('Country created with ID:', countryResult.id);
+        
+        if (countryData.regions && countryData.regions.length > 0) {
+            console.log(`Creating ${countryData.regions.length} regions for country ${countryResult.id}`);
+            
+            for (const regionData of countryData.regions) {
+                await createRegion(countryResult.id, regionData, connection);
+                console.log(`Created region: ${regionData.name}`);
+            }
+        }
+        
+        await connection.commit();
+        
+        const completeCountry = await findCountryById(countryResult.id);
+        console.log('Country created successfully with regions:', completeCountry);
+        
+        return completeCountry;
+    } catch (error) {
+        await connection.rollback();
+        console.error('Service error:', error);
+        throw error;
+    } finally {
+        connection.release();
+    }
 }
 
 // Update country
@@ -62,7 +102,6 @@ async function updateCountryService(id, countryData) {
         throw new AppError('Country not found', 404);
     }
     
-    // Check if updating code and it conflicts with existing
     if (countryData.code && countryData.code !== country.code) {
         const existingCountry = await findCountryByCode(countryData.code);
         if (existingCountry) {

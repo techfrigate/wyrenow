@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { TableProps, TableColumn } from '../../types';
 
+// Extended TableColumn interface to support dropdown filters
+export interface EnhancedTableColumn<T> extends TableColumn<T> {
+  filterType?: 'text' | 'dropdown';
+  filterOptions?: { value: string; label: string }[];
+}
+
 export function Table<T>({
   data,
   columns,
@@ -15,9 +21,8 @@ export function Table<T>({
 }: TableProps<T>) {
   const [sortColumn, setSortColumn] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [filters, setFilters] = useState<Record<string, string>>({});
 
-  const handleSort = (column: TableColumn<T>) => {
+  const handleSort = (column: EnhancedTableColumn<T>) => {
     if (!column.sortable) return;
     
     const columnKey = column.key as string;
@@ -28,10 +33,53 @@ export function Table<T>({
     onSort?.(columnKey, newDirection);
   };
 
-  const handleFilter = (columnKey: string, value: string) => {
-    const newFilters = { ...filters, [columnKey]: value };
-    setFilters(newFilters);
-    onFilter?.(newFilters);
+  const handleFilterChange = (column: EnhancedTableColumn<T>, value: string) => {
+    if (column.onFilterChange) {
+      column.onFilterChange(value);
+    } else if (onFilter) {
+      onFilter({ [column.key as string]: value });
+    }
+  };
+
+  const renderFilter = (column: EnhancedTableColumn<T>) => {
+    if (!column.filterable) return null;
+
+    const filterType = column.filterType || 'text';
+
+    if (filterType === 'dropdown' && column.filterOptions) {
+      return (
+        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+          <select
+            value={column.filterValue || ''}
+            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+            onChange={(e) => handleFilterChange(column, e.target.value)}
+          >
+            <option value="">All</option>
+            {column.filterOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+
+    // Default text filter
+    return (
+      <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Filter..."
+            value={column.filterValue || ''}
+            className="pl-7 pr-2 py-1 text-xs border border-gray-300 rounded w-full focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            onChange={(e) => handleFilterChange(column, e.target.value)}
+          />
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -85,36 +133,35 @@ export function Table<T>({
                       </div>
                     )}
                   </div>
-                  {column.filterable && (
-                    <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-                      <div className="relative">
-                        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
-                        <input
-                          type="text"
-                          placeholder="Filter..."
-                          className="pl-7 pr-2 py-1 text-xs border border-gray-300 rounded w-full focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          onChange={(e) => handleFilter(column.key as string, e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  )}
+                  {renderFilter(column as EnhancedTableColumn<T>)}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((row, index) => (
-              <tr key={index} className="hover:bg-gray-50">
-                {columns.map((column) => (
-                  <td key={column.key as string} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {column.render 
-                      ? column.render((row as any)[column.key], row)
-                      : (row as any)[column.key]
-                    }
-                  </td>
-                ))}
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="px-6 py-8 text-center text-gray-500">
+                  <div className="flex flex-col items-center space-y-2">
+                    <Search className="w-8 h-8 text-gray-300" />
+                    <span>No data found</span>
+                  </div>
+                </td>
               </tr>
-            ))}
+            ) : (
+              data.map((row, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  {columns.map((column) => (
+                    <td key={column.key as string} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {column.render 
+                        ? column.render((row as any)[column.key], row)
+                        : (row as any)[column.key]
+                      }
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

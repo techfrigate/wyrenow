@@ -1,34 +1,20 @@
-const PackageRepository = require('../repository/PackageRepository');
-const { errorResponse } = require('../utils/helpers');
+const PackageRepository = require('../repository/Package');
 
 const getAllPackages = async (filters) => {
-  try {
-    const packages = await PackageRepository.findAll(filters);
-    const totalCount = await PackageRepository.count(filters);
-    return {
-      packages,
-      totalCount,
-      currentPage: filters.page || 1,
-      totalPages: Math.ceil(totalCount / (filters.limit || 10))
-    };
-  } catch (error) {
-    errorResponse(
-      'Failed to fetch packages',
-      { success: false, message: error.message },
-      500
-    );
-    
-  }
+  const packages = await PackageRepository.findAll(filters);
+  const totalCount = await PackageRepository.count(filters);
+  return {
+    packages,
+    totalCount,
+    currentPage: filters.page || 1,
+    totalPages: Math.ceil(totalCount / (filters.limit || 10))
+  };
 };
 
 const getPackageById = async (id) => {
   const package = await PackageRepository.findById(id);
   if (!package) {
-    return errorResponse(
-      'Package not found',
-      { success: false, message: 'Package not found' },
-      404
-    );
+    throw new Error('Package not found');
   }
   return package;
 };
@@ -37,11 +23,7 @@ const createPackage = async (packageData) => {
   // Check if package name already exists
   const existingPackage = await PackageRepository.findByName(packageData.name);
   if (existingPackage) {
-   return errorResponse(
-      'Package with this name already exists',
-      { success: false, message: 'Package with this name already exists' },
-      409
-    );
+    throw new Error('Package with this name already exists');
   }
   return await PackageRepository.create(packageData);
 };
@@ -49,22 +31,14 @@ const createPackage = async (packageData) => {
 const updatePackage = async (id, packageData) => {
   const package = await PackageRepository.findById(id);
   if (!package) {
-   return errorResponse(
-      'Package not found',
-      { success: false, message: 'Package not found' },
-      404
-    );
+    throw new Error('Package not found');
   }
 
   // Check if updating name and it conflicts with existing
   if (packageData.name && packageData.name !== package.name) {
     const existingPackage = await PackageRepository.findByName(packageData.name);
     if (existingPackage) {
-       return errorResponse(
-            'Package with this name already exists',
-            { success: false, message: 'Package with this name already exists' },
-            409
-        );
+      throw new Error('Package with this name already exists');
     }
   }
 
@@ -74,11 +48,7 @@ const updatePackage = async (id, packageData) => {
 const deletePackage = async (id) => {
   const package = await PackageRepository.findById(id);
   if (!package) {
-   return  errorResponse(
-      'Package not found',
-      { success: false, message: 'Package not found' },
-      404
-    );
+    throw new Error('Package not found');
   }
   return await PackageRepository.delete(id);
 };
@@ -86,11 +56,7 @@ const deletePackage = async (id) => {
 const togglePackageStatus = async (id) => {
   const package = await PackageRepository.findById(id);
   if (!package) {
-    return errorResponse(
-      'Package not found',
-      { success: false, message: 'Package not found' },
-      404
-    );
+    throw new Error('Package not found');
   }
 
   const newStatus = package.status === 'active' ? 'inactive' : 'active';

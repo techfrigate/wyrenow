@@ -43,9 +43,10 @@ const getCountryById  = async (req, res, next) => {
     }
 };
 
-// Create new country
-const createCountry  = async (req, res, next) => {
+const createCountry = async (req, res, next) => {
     try {
+        console.log('Creating country with data:', req.body);
+        
         const country = await countryService.createCountryService(req.body);
 
         successResponse(res, {
@@ -53,6 +54,7 @@ const createCountry  = async (req, res, next) => {
             data: country
         }, 201);
     } catch (error) {
+        console.error('Error creating country:', error);
         next(error);
     }
 };

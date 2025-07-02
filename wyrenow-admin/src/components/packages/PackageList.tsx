@@ -1,36 +1,71 @@
 import React, { useEffect, useState } from 'react';
-import { Edit, Trash2, Plus, Eye } from 'lucide-react';
+import { Edit, Plus, Eye, RefreshCw } from 'lucide-react';
 import { Package, TableColumn } from '../../types';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
-import { fetchPackages, createPackage, updatePackage, deletePackage } from '../../store/slices/packageSlice';
+import { 
+  fetchPackages, 
+  togglePackageStatus,
+  clearError 
+} from '../../store/slices/packageSlice';
 import { Table } from '../ui/Table';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+import { Toggle } from '../ui/Toggle';
 import { PackageForm } from './PackageForm';
 import { Modal } from '../ui/Modal';
 import { CURRENCY_SYMBOLS } from '../../utils/constants';
 
 export function PackageList() {
   const dispatch = useAppDispatch();
-  const { packages, loading } = useAppSelector((state) => state.packages);
+  const { 
+    packages, 
+    loading, 
+    error, 
+    totalCount, 
+    currentPage, 
+    totalPages 
+  } = useAppSelector((state) => state.packages);
+  
   const [showForm, setShowForm] = useState(false);
   const [editingPackage, setEditingPackage] = useState<Package | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewPackage, setPreviewPackage] = useState<Package | null>(null);
+  const [filters, setFilters] = useState({
+    page: 1,
+    limit: 10,
+    status: '',
+    search: '',
+    sortBy: 'created_at',
+    sortOrder: 'DESC' as 'ASC' | 'DESC'
+  });
 
   useEffect(() => {
-    dispatch(fetchPackages());
+    dispatch(fetchPackages(filters));
+  }, [dispatch, filters]);
+
+  // Clear error when component mounts
+  useEffect(() => {
+    if (error) {
+      dispatch(clearError());
+    }
   }, [dispatch]);
+
+  const handleRefresh = () => {
+    dispatch(fetchPackages(filters));
+  };
 
   const handleEdit = (pkg: Package) => {
     setEditingPackage(pkg);
     setShowForm(true);
   };
 
-  const handleDelete = async (pkg: Package) => {
-    if (window.confirm(`Are you sure you want to delete "${pkg.name}"?`)) {
-      dispatch(deletePackage(pkg.id));
+  const handleToggleStatus = async (pkg: Package) => {
+    try {
+      await dispatch(togglePackageStatus(pkg.id)).unwrap();
+      // No need to refresh as Redux will update the state automatically
+    } catch (error) {
+      console.error('Failed to toggle package status:', error);
     }
   };
 
@@ -39,18 +74,23 @@ export function PackageList() {
     setShowPreview(true);
   };
 
-  const handleFormSubmit = async (data: any) => {
-    try {
-      if (editingPackage) {
-        dispatch(updatePackage({ id: editingPackage.id, data }));
-      } else {
-        dispatch(createPackage(data));
-      }
-      setShowForm(false);
-      setEditingPackage(null);
-    } catch (error) {
-      console.error('Failed to save package:', error);
-    }
+  const handleFormSuccess = () => {
+    setShowForm(false);
+    setEditingPackage(null);
+    // Refresh the list after successful form submission
+    dispatch(fetchPackages(filters));
+  };
+
+  const handlePageChange = (page: number) => {
+    setFilters(prev => ({ ...prev, page }));
+  };
+
+  const handleFilterChange = (key: string, value: any) => {
+    setFilters(prev => ({ 
+      ...prev, 
+      [key]: value,
+      page: 1 // Reset to first page when filtering
+    }));
   };
 
   const columns: TableColumn<Package>[] = [
@@ -94,15 +134,20 @@ export function PackageList() {
       key: 'status',
       title: 'Status',
       sortable: true,
-      filterable: true,
-      render: (value) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          value === 'active' 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-red-100 text-red-800'
-        }`}>
-          {value}
-        </span>
+      render: (value, row) => (
+        <div className="flex items-center">
+          <Toggle
+            label=""
+            checked={value === 'active'}
+            onChange={(checked) => handleToggleStatus(row)}
+            disabled={loading}
+          />
+          <span className={`ml-2 text-xs font-medium ${
+            value === 'active' ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {value === 'active' ? 'Active' : 'Inactive'}
+          </span>
+        </div>
       )
     },
     {
@@ -113,24 +158,17 @@ export function PackageList() {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => handlePreview(row)}
-            className="p-1 text-gray-500 hover:text-blue-600"
+            className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
             title="Preview"
           >
             <Eye className="w-4 h-4" />
           </button>
           <button
             onClick={() => handleEdit(row)}
-            className="p-1 text-gray-500 hover:text-blue-600"
+            className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
             title="Edit"
           >
             <Edit className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => handleDelete(row)}
-            className="p-1 text-gray-500 hover:text-red-600"
-            title="Delete"
-          >
-            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       )
@@ -143,13 +181,106 @@ export function PackageList() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Package Management</h1>
-          <p className="text-gray-600">Create and manage MLM packages</p>
+          <p className="text-gray-600">
+            Create and manage MLM packages 
+            {totalCount > 0 && (
+              <span className="ml-2 text-sm">
+                ({totalCount} total packages)
+              </span>
+            )}
+          </p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Package
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            variant="secondary" 
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Package
+          </Button>
+        </div>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded flex justify-between items-center">
+          <span>{error}</span>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => dispatch(clearError())}
+          >
+            Dismiss
+          </Button>
+        </div>
+      )}
+
+      {/* Filters */}
+      <Card>
+        <div className="p-4 border-b">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Search
+              </label>
+              <input
+                type="text"
+                placeholder="Search packages..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <select
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Sort By
+              </label>
+              <select
+                value={filters.sortBy}
+                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="created_at">Created Date</option>
+                <option value="name">Name</option>
+                <option value="pv">PV</option>
+                <option value="price_ngn">Price (NGN)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Order
+              </label>
+              <select
+                value={filters.sortOrder}
+                onChange={(e) => handleFilterChange('sortOrder', e.target.value as 'ASC' | 'DESC')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="DESC">Descending</option>
+                <option value="ASC">Ascending</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       {/* Package Table */}
       <Card>
@@ -158,6 +289,33 @@ export function PackageList() {
           columns={columns}
           loading={loading}
         />
+        
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-4 py-3 border-t flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Showing page {currentPage} of {totalPages} ({totalCount} total packages)
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1 || loading}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages || loading}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Package Form Modal */}
@@ -172,7 +330,7 @@ export function PackageList() {
       >
         <PackageForm
           initialData={editingPackage}
-          onSubmit={handleFormSubmit}
+          onSuccess={handleFormSuccess}
           onCancel={() => {
             setShowForm(false);
             setEditingPackage(null);
@@ -239,16 +397,6 @@ export function PackageList() {
               </div>
             )}
 
-            {previewPackage.features && previewPackage.features.length > 0 && (
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Features</h4>
-                <ul className="list-disc list-inside space-y-1 text-gray-600">
-                  {previewPackage.features.map((feature, index) => (
-                    <li key={index}>{feature}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         )}
       </Modal>
