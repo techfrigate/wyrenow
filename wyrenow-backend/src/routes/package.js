@@ -4,7 +4,7 @@ const PackageController = require('../controllers/packageController');
 const { validateRequest, packageSchema } = require('../middlewares/validation');
 
 // Package routes
-router.get('/getpackages', PackageController.getAllPackages);
+router.get('/packages', PackageController.getAllPackages);
 router.get('/packages/active', PackageController.getActivePackages);
 router.get('/packages/:id', PackageController.getPackageById);
 router.post('/packages', validateRequest(packageSchema), PackageController.createPackage);

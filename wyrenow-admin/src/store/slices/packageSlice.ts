@@ -23,25 +23,7 @@ const initialState: PackageState = {
 
 const API_BASE_URL = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3000/api';
 
-// Helper function for API calls
-const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Network error' }));
-    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
-};
-
-// Fetch all packages with optional filters
 export const fetchPackages = createAsyncThunk(
   'packages/fetchPackages',
   async (filters: {
@@ -63,43 +45,77 @@ export const fetchPackages = createAsyncThunk(
         }
       });
 
-      const endpoint = `/getpackages${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      const response = await apiCall(endpoint);
-      
-      return response.data;
+      // Construct URL with proper query string
+      const queryString = queryParams.toString();
+      const url = queryString 
+        ? `${API_BASE_URL}/package/packages?${queryString}`
+        : `${API_BASE_URL}/package/packages`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.data;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch packages');
     }
   }
 );
 
-// Fetch active packages only
 export const fetchActivePackages = createAsyncThunk(
   'packages/fetchActivePackages',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await apiCall('/packages/active');
-      return response.data;
+      const response = await fetch(`${API_BASE_URL}/packages/active`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.data;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch active packages');
     }
   }
 );
 
-// Fetch package by ID
 export const fetchPackageById = createAsyncThunk(
   'packages/fetchPackageById',
   async (id: string, { rejectWithValue }) => {
     try {
-      const response = await apiCall(`/packages/${id}`);
-      return response.data;
+      const response = await fetch(`${API_BASE_URL}/packages/${id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.data;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch package');
     }
   }
 );
 
-// Create new package
 export const createPackage = createAsyncThunk(
   'packages/createPackage',
   async (packageData: {
@@ -114,7 +130,6 @@ export const createPackage = createAsyncThunk(
     features: string[];
   }, { rejectWithValue }) => {
     try {
-      // Transform frontend data to backend format
       const backendData = {
         name: packageData.name,
         description: packageData.description,
@@ -127,19 +142,27 @@ export const createPackage = createAsyncThunk(
         features: packageData.features,
       };
 
-      const response = await apiCall('/packages', {
+      const response = await fetch(`${API_BASE_URL}/package/packages`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(backendData),
       });
-      
-      return response.data;
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.data;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to create package');
     }
   }
 );
 
-// Update package
 export const updatePackage = createAsyncThunk(
   'packages/updatePackage',
   async ({ id, data }: { 
@@ -153,7 +176,6 @@ export const updatePackage = createAsyncThunk(
       bottles?: number;
       type?: string;
       status?: string;
-      features?: string[];
     }
   }, { rejectWithValue }) => {
     try {
@@ -168,14 +190,21 @@ export const updatePackage = createAsyncThunk(
       if (data.bottles !== undefined) backendData.bottles = data.bottles;
       if (data.type !== undefined) backendData.package_type = data.type;
       if (data.status !== undefined) backendData.status = data.status;
-      if (data.features !== undefined) backendData.features = data.features;
 
-      const response = await apiCall(`/packages/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/package/packages/${id}`, {
         method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(backendData),
       });
-      
-      return response.data;
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      const responseData = await response.json();
+      return responseData.data;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to update package');
     }
@@ -187,10 +216,18 @@ export const deletePackage = createAsyncThunk(
   'packages/deletePackage',
   async (id: string, { rejectWithValue }) => {
     try {
-      await apiCall(`/packages/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/package/packages/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
-      
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
       return id;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to delete package');
@@ -203,11 +240,20 @@ export const togglePackageStatus = createAsyncThunk(
   'packages/togglePackageStatus',
   async (id: string, { rejectWithValue }) => {
     try {
-      const response = await apiCall(`/packages/${id}/status`, {
+      const response = await fetch(`${API_BASE_URL}/package/packages/${id}/status`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
-      
-      return response.data;
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.data;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to toggle package status');
     }
@@ -219,36 +265,52 @@ export const bulkUpdatePackageStatus = createAsyncThunk(
   'packages/bulkUpdatePackageStatus',
   async ({ ids, status }: { ids: string[]; status: 'active' | 'inactive' }, { rejectWithValue }) => {
     try {
-      const response = await apiCall('/packages/bulk-status', {
+      const response = await fetch(`${API_BASE_URL}/package/packages/bulk-status`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ ids, status }),
       });
-      
-      return response.data;
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.data;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to bulk update package status');
     }
   }
 );
 
-// Calculate package prices
 export const calculatePackagePrices = createAsyncThunk(
   'packages/calculatePackagePrices',
   async ({ pv, pvRates }: { pv: number; pvRates: { NGN: number; GHS: number } }, { rejectWithValue }) => {
     try {
-      const response = await apiCall('/packages/calculate-prices', {
+      const response = await fetch(`${API_BASE_URL}/package/packages/calculate-prices`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ pv, pvRates }),
       });
-      
-      return response.data;
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.data;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to calculate prices');
     }
   }
 );
 
-// Transform backend package data to frontend format
 const transformPackageData = (backendPackage: any): Package => {
   return {
     id: backendPackage.id,

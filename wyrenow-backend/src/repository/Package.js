@@ -36,15 +36,18 @@ async function findAllPackages(filters = {}) {
     query += ` ORDER BY ${sortBy} ${sortOrder}`;
     
     // Pagination
-    if (filters.limit) {
-        if (filters.offset) {
-            query += ` LIMIT ?, ?`;
-            values.push(parseInt(filters.offset), parseInt(filters.limit));
-        } else {
-            query += ` LIMIT ?`;
-            values.push(parseInt(filters.limit));
-        }
+  if (filters.limit) {
+    const limit = parseInt(filters.limit);
+    if (filters.offset !== undefined) {
+        const offset = parseInt(filters.offset);
+        query += ` LIMIT ?, ?`;
+        values.push(String(offset), String(limit));
+    } else {
+        query += ` LIMIT ?`;
+        values.push(String(limit));
     }
+}
+
     
     const [result] = await pool.execute(query, values);
     return result;
@@ -324,8 +327,23 @@ async function getPackageStatistics() {
     };
 }
 
-// Export all functions
 module.exports = {
+    findAll: findAllPackages,
+    findById: findPackageById,
+    findByName: findPackageByName,
+    create: createPackage,
+    update: updatePackage,
+    delete: deletePackage,
+    updateStatus: updatePackageStatus,
+    count: countPackages,
+    getActivePackages,
+    getWithStats: getPackagesWithStats,
+    bulkUpdateStatus: bulkUpdatePackageStatus,
+    getByPriceRange: getPackagesByPriceRange,
+    getByPvRange: getPackagesByPvRange,
+    getStatistics: getPackageStatistics,
+    
+    // Keep original names for backward compatibility:
     findAllPackages,
     findPackageById,
     findPackageByName,
@@ -334,7 +352,6 @@ module.exports = {
     deletePackage,
     updatePackageStatus,
     countPackages,
-    getActivePackages,
     getPackagesWithStats,
     bulkUpdatePackageStatus,
     getPackagesByPriceRange,

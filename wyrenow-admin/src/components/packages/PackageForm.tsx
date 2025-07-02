@@ -74,25 +74,6 @@ export function PackageForm({ initialData, onSuccess, onCancel }: PackageFormPro
     }
   };
 
-  const handleFeatureChange = (index: number, value: string) => {
-    const newFeatures = [...formData.features];
-    newFeatures[index] = value;
-    setFormData(prev => ({ ...prev, features: newFeatures }));
-  };
-
-  const addFeature = () => {
-    setFormData(prev => ({
-      ...prev,
-      features: [...prev.features, '']
-    }));
-  };
-
-  const removeFeature = (index: number) => {
-    if (formData.features.length > 1) {
-      const newFeatures = formData.features.filter((_, i) => i !== index);
-      setFormData(prev => ({ ...prev, features: newFeatures }));
-    }
-  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -234,7 +215,7 @@ export function PackageForm({ initialData, onSuccess, onCancel }: PackageFormPro
 
         <div>
           <Input
-            label="Price (₦)"
+            label="Price ($)"
             type="number"
             value={formData.priceNGN}
             onChange={(e) => handleInputChange('priceNGN', parseInt(e.target.value) || 0)}
@@ -244,62 +225,7 @@ export function PackageForm({ initialData, onSuccess, onCancel }: PackageFormPro
             disabled={autoCalculate || loading}
           />
         </div>
-
-        <div>
-          <Input
-            label="Price in Ghanaian Cedi (GH₵)"
-            type="number"
-            value={formData.priceGHS}
-            onChange={(e) => handleInputChange('priceGHS', parseInt(e.target.value) || 0)}
-            error={errors.priceGHS}
-            required
-            min="1"
-            disabled={autoCalculate || loading}
-          />
-        </div>
       </div>
-
-      {/* Features Section */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Package Features
-        </label>
-        <div className="space-y-3">
-          {formData.features.map((feature, index) => (
-            <div key={index} className="flex items-center space-x-2">
-              <Input
-                value={feature}
-                onChange={(e) => handleFeatureChange(index, e.target.value)}
-                placeholder={`Feature ${index + 1}`}
-                className="flex-1"
-                disabled={loading}
-              />
-              {formData.features.length > 1 && (
-                <Button
-                  type="button"
-                  variant="danger"
-                  size="sm"
-                  onClick={() => removeFeature(index)}
-                  disabled={loading}
-                >
-                  Remove
-                </Button>
-              )}
-            </div>
-          ))}
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={addFeature}
-            disabled={loading}
-          >
-            Add Feature
-          </Button>
-        </div>
-      </div>
-
-      {/* Status Toggle */}
       <div>
         <Toggle
           label="Package is active"

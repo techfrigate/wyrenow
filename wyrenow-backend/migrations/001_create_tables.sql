@@ -6,14 +6,22 @@
 CREATE DATABASE IF NOT EXISTS wyrenow_db;
 USE wyrenow_db;
 
--- Countries table
+
 CREATE TABLE IF NOT EXISTS countries (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL UNIQUE,
     code VARCHAR(3) NOT NULL UNIQUE,
     currency VARCHAR(50) NOT NULL,
     currency_symbol VARCHAR(10) NOT NULL,
-    pv_rate DECIMAL(10,2) NOT NULL DEFAULT 1.00,
+    
+    -- Multiple PV rates as per PDF requirements
+    product_pv_rate DECIMAL(10,2) NOT NULL DEFAULT 1200.00, -- ₦1,200 / GH₵30
+    bonus_pv_rate DECIMAL(10,2) NOT NULL DEFAULT 525.00,     -- ₦525 / GH₵12
+    platform_margin DECIMAL(10,2) NOT NULL DEFAULT 2000.00, -- ₦2,000 / GH₵20
+    
+    -- Cross-country cap percentage (configurable)
+    cross_country_cap_percentage DECIMAL(5,2) DEFAULT 30.00,
+    
     status ENUM('active', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -46,7 +54,6 @@ CREATE TABLE IF NOT EXISTS packages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
-ALTER TABLE packages ADD COLUMN features JSON;
 
 -- MLM registrations table
 CREATE TABLE IF NOT EXISTS mlm_registrations (
@@ -162,9 +169,10 @@ CREATE INDEX idx_bv_logs_uid ON bv_logs(uid);
 CREATE INDEX idx_bv_logs_updated_for ON bv_logs(updated_for_uid);
 
 -- Insert default countries
-INSERT IGNORE INTO countries (name, code, currency, currency_symbol, pv_rate) VALUES
-('Nigeria', 'NG', 'Nigerian Naira', '₦', 525.00),
-('Ghana', 'GH', 'Ghanaian Cedi', 'GH₵', 12.00);
+-- Insert default countries with updated schema
+INSERT IGNORE INTO countries (name, code, currency, currency_symbol, product_pv_rate, bonus_pv_rate, platform_margin, cross_country_cap_percentage) VALUES
+('Nigeria', 'NG', 'Nigerian Naira', '₦', 1200.00, 525.00, 2000.00, 30.00),
+('Ghana', 'GH', 'Ghanaian Cedi', 'GH₵', 30.00, 12.00, 20.00, 30.00);
 
 -- Insert Nigerian states
 INSERT IGNORE INTO regions (country_id, name, code)
