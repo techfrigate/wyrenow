@@ -19,6 +19,7 @@ const validateRequest = (schema) => {
 
 const validateCountryParams = (req, res, next) => {
     const { countryId } = req.params;
+    console.log(countryId)
     
     if (!countryId || isNaN(countryId)) {
         return errorResponse(res, {
@@ -113,7 +114,7 @@ const packageSchema = Joi.object({
 const registrationSchema = Joi.object({
     sponsorUsername: Joi.string().required(),
     placementUsername: Joi.string().required(),
-    placementLeg: Joi.string().valid('left', 'right').required(),
+    // placementLeg: Joi.string().valid('left', 'right').required(),
     newUsername: Joi.string().min(3).max(50).required(),
     firstName: Joi.string().min(2).max(100).required(),
     lastName: Joi.string().min(2).max(100).required(),

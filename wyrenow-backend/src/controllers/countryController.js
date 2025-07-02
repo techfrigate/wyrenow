@@ -91,16 +91,17 @@ const deleteCountry  = async (req, res, next) => {
 // Get country regions
 const getCountryRegions  = async (req, res, next) => {
     try {
-        const { id } = req.params;
+        const { countryId  } = req.params;
         const { status } = req.query;
         
-        const regions = await countryService.getCountryRegionsService(id, { status });
+        const regions = await countryService.getCountryRegionsService(countryId, { status });
 
         successResponse(res, {
             message: 'Regions retrieved successfully',
             data: regions
         });
     } catch (error) {
+    
         next(error);
     }
 };

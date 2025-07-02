@@ -230,7 +230,7 @@ async function deleteCountry(id) {
 async function getCountryRegions(countryId, filters = {}) {
     let query = 'SELECT * FROM regions WHERE country_id = ?';
     const values = [countryId];
-    
+    console.log(values,countryId,"coynt")
     if (filters.status) {
         query += ` AND status = ?`;
         values.push(filters.status);

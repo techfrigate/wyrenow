@@ -46,8 +46,9 @@ export interface FormData {
   // Sponsor Information
   sponsorUsername: string;
   sponsorName: string;
+  placementUserid: number;
+  placementLeg: 'left' | 'right';
   placementUsername: string;
-  placementName: string;
   
   // User Details
   newUsername: string;

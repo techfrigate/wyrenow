@@ -121,3 +121,184 @@ export interface LeadershipPool {
   eligibleMembers: number;
 }
 
+export interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  profileImage?: string;
+  isActive: boolean;
+  joinDate: string;
+  package: {
+    id: string;
+    name: string;
+    price: number;
+  };
+  rank: {
+    id: string;
+    name: string;
+    level: number;
+  };
+}
+
+export interface TreeNode {
+  user: User;
+  totalLeftPV: number;
+  totalRightPV: number;
+  totalLeftBV: number;
+  totalRightBV: number;
+  leftChild?: TreeNode;
+  rightChild?: TreeNode;
+}
+
+export interface BinaryTreeStats {
+  leftLegPV: number;
+  rightLegPV: number;
+  leftLegMembers: number;
+  rightLegMembers: number;
+  totalPairs: number;
+  monthlyPairs: number;
+  weeklyPairs: number;
+  unusedLeftPV: number;
+  unusedRightPV: number;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  timestamp: string;
+  read: boolean;
+}
+
+export interface Commission {
+  id: string;
+  type: string;
+  amount: number;
+  fromUser: string;
+  date: string;
+  status: 'pending' | 'paid' | 'cancelled';
+}
+
+export interface Withdrawal {
+  id: string;
+  amount: number;
+  method: string;
+  accountDetails: string;
+  date: string;
+  status: 'pending' | 'processing' | 'completed' | 'rejected';
+  fees: number;
+}
+
+export interface Package {
+  id: string;
+  name: string;
+  price: number;
+  pv: number;
+  benefits: string[];
+  isPopular?: boolean;
+}
+
+export interface Rank {
+  id: string;
+  name: string;
+  level: number;
+  requirements: {
+    personalSales: number;
+    groupSales: number;
+    directReferrals: number;
+  };
+  benefits: string[];
+  commissionRate: number;
+}
+
+
+// types/binaryTree.ts
+export interface BackendUser {
+  id: number;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  level: number;
+}
+
+export interface BackendPVData {
+  leftPV: number;
+  rightPV: number;
+  totalPV: number;
+}
+
+export interface BackendBVData {
+  leftBV: number;
+  rightBV: number;
+  totalBV: number;
+}
+
+export interface BackendTreeNode {
+  id: number;
+  username: string;
+  firstName: string;
+  lastName: string;
+  sponsorUsername?: string;
+  email: string;
+  phone: string;
+  level: number;
+  pvData: BackendPVData;
+  bvData: BackendBVData;
+  children: {
+    left: BackendTreeNode | null;
+    right: BackendTreeNode | null;
+  };
+}
+
+export interface BackendStats {
+  leftLeg: {
+    pv: number;
+    bv: number;
+  };
+  rightLeg: {
+    pv: number;
+    bv: number;
+  };
+  totalPairs: {
+    count: number;
+    thisWeek: number;
+  };
+  teamMembers: {
+    count: number;
+    thisWeek: number;
+  };
+}
+
+export interface BinaryTreeApiResponse {
+  success: boolean;
+  data: BackendTreeNode;
+  stats: BackendStats;
+}
+
+export interface BinaryTreeState {
+  treeData: TreeNode | null;
+  stats: BinaryTreeStats | null;
+  loading: boolean;
+  error: string | null;
+  currentUserId: number | null;
+}
+
+export interface BinaryTreeStats {
+  leftLegPV: number;
+  rightLegPV: number;
+  leftLegBV: number;
+  rightLegBV: number;
+  leftLegMembers: number;
+  rightLegMembers: number;
+  totalPairs: number;
+  weeklyPairs: number;
+  monthlyPairs: number;
+  unusedLeftPV: number;
+  unusedRightPV: number;
+  teamMembersThisWeek: number;
+}

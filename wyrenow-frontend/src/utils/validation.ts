@@ -26,7 +26,7 @@ export const validateStep = (
       if (!formData.sponsorUsername) errors.sponsorUsername = 'Sponsor username is required';
       if (!formData.sponsorName) errors.sponsorUsername = 'Valid sponsor required';
       if (!formData.placementUsername) errors.placementUsername = 'Placement username is required';
-      if (!formData.placementName) errors.placementUsername = 'Valid placement user required';
+      if (!formData.placementLeg) errors.placementUsername = 'Valid placement leg is required';
       break;
       
     case 3:

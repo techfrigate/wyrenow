@@ -1,10 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
-import counterReducer from "./slices/counterSlice"; 
+  
 import countryReducer from "./slices/countrySlice";
+import registrationReducer from "./slices/ragistrationSlice";
+import binaryTreeReducer from './slices/binaryTreeSlice';
+import authReducer from './slices/authSlice';
 export const store = configureStore({
   reducer: {
-    counter: counterReducer,
-    countries:countryReducer
+    countries:countryReducer,
+    registration:registrationReducer,
+    binaryTree: binaryTreeReducer,
+    auth:authReducer
   },
 });
 

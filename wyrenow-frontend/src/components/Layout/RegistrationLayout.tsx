@@ -2,6 +2,7 @@ import React, { ReactNode } from 'react';
 import { Button, ProgressSteps } from '../ui';
 import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { RegistrationStep } from '../../types';
+import LoadingSpinner from './LoadingSpinner';
 
 interface RegistrationLayoutProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ interface RegistrationLayoutProps {
   onNext: () => void;
   onSubmit?: () => void;
   isLastStep: boolean;
+  validUserLoading?: boolean
 }
 
 const RegistrationLayout: React.FC<RegistrationLayoutProps> = ({
@@ -26,8 +28,10 @@ const RegistrationLayout: React.FC<RegistrationLayoutProps> = ({
   onPrevious,
   onNext,
   onSubmit,
-  isLastStep
+  isLastStep,
+  validUserLoading
 }) => {
+  
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -66,7 +70,7 @@ const RegistrationLayout: React.FC<RegistrationLayoutProps> = ({
               disabled={isLoading}
               variant="success"
               icon={isLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                 <LoadingSpinner size="sm" variant="white"/>
               ) : (
                 <CheckCircle className="w-4 h-4" />
               )}
@@ -76,10 +80,11 @@ const RegistrationLayout: React.FC<RegistrationLayoutProps> = ({
           ) : (
             <Button
               onClick={onNext}
-              icon={<ArrowRight className="w-4 h-4" />}
+              icon={validUserLoading?  <LoadingSpinner size="sm" variant="white"/> : <ArrowRight className="w-4 h-4" />}
               iconPosition="right"
+              disabled={validUserLoading}
             >
-              Next
+              {validUserLoading ? 'Validating User...' : 'Next' }
             </Button>
           )}
         </div>

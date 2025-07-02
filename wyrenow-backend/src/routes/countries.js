@@ -12,7 +12,7 @@ router.put('/:id', validateRequest(countrySchema), CountryController.updateCount
 router.delete('/:id', CountryController.deleteCountry);
 
 // Region routes
-router.get('/:id/regions',validateCountryParams, CountryController.getCountryRegions);
+router.get('/:countryId/regions',validateCountryParams, CountryController.getCountryRegions);
 router.post('/:id/regions', validateRequest(regionSchema), CountryController.addRegionToCountry);
 router.put('/regions/:regionId', validateRequest(regionSchema), CountryController.updateRegion);
 router.delete('/regions/:regionId', CountryController.deleteRegion);

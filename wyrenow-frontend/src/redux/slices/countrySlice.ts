@@ -57,7 +57,7 @@ export const fetchCountries = createAsyncThunk<
     async (_, { rejectWithValue }) => {
         try {
             const response = await axios.get(`${BaseUrl}/countries/active-counties`);
-            console.log(response, "response of country");
+          
             if (!response) {
                 return rejectWithValue('Failed to fetch countries');
             }
@@ -77,11 +77,12 @@ export const fetchRegionsByCountry = createAsyncThunk<
 >(
     'countries/fetchRegionsByCountry',
     async (countryId, { rejectWithValue }) => {
+     
         try {
-            const response = await axios.get(`${BaseUrl}/countries/${countryId}/regions`);
-           
-            return { countryId, regions: result.data };
+            const response = await axios.get(`${BaseUrl}/countries/${countryId}/regions?status=active`);
+            return {countryId, regions: response.data.data};
         } catch (error) {
+          
             return rejectWithValue('Network error occurred');
         }
     }
@@ -89,7 +90,7 @@ export const fetchRegionsByCountry = createAsyncThunk<
 
 const initialState: CountriesState = {
     countries: [],
-    regions: {},
+    regions: [],
     selectedCountry: null,
     selectedRegion: null,
     loading: {
@@ -120,7 +121,7 @@ const countriesSlice = createSlice({
             state.selectedRegion = null;
         },
         
-        clearErrors: (state) => {
+        clearCountryErrors: (state) => {
             state.error.countries = null;
             state.error.regions = null;
         },
@@ -152,8 +153,9 @@ const countriesSlice = createSlice({
             .addCase(fetchRegionsByCountry.fulfilled, (state, action) => {
                 state.loading.regions = false;
                 const { countryId, regions } = action.payload;
-                state.regions[countryId] = regions;
-                state.error.regions = null;
+                 state.selectedCountry= state.countries.find(country => country.id === countryId) || null;
+                 state.regions = regions;
+                 state.error.regions = null;
             })
             .addCase(fetchRegionsByCountry.rejected, (state, action) => {
                 state.loading.regions = false;
@@ -167,36 +169,11 @@ export const {
     setSelectedCountry,
     setSelectedRegion,
     clearSelectedCountry,
-    clearErrors,
+    clearCountryErrors,
     resetCountriesState
 } = countriesSlice.actions;
 
 // Selectors
 export const selectCountriesState = (state: { countries: CountriesState }) => state.countries;
-export const selectRegions = (state: { countries: CountriesState }) => state.countries.regions;
-export const selectSelectedCountry = (state: { countries: CountriesState }) => state.countries.selectedCountry;
-export const selectSelectedRegion = (state: { countries: CountriesState }) => state.countries.selectedRegion;
-export const selectCountriesLoading = (state: { countries: CountriesState }) => state.countries.loading.countries;
-export const selectRegionsLoading = (state: { countries: CountriesState }) => state.countries.loading.regions;
-export const selectCountriesError = (state: { countries: CountriesState }) => state.countries.error.countries;
-export const selectRegionsError = (state: { countries: CountriesState }) => state.countries.error.regions;
-
-// Derived selectors
-export const selectRegionsBySelectedCountry = (state: { countries: CountriesState }) => {
-    const selectedCountry = selectSelectedCountry(state);
-    const regions = selectRegions(state);
-    return selectedCountry ? regions[selectedCountry.id] || [] : [];
-};
-
-export const selectCountryById = (state: { countries: CountriesState }, countryId: number) => {
-    const {countries} = selectCountriesState(state);
-    return countries.find(country => country.id === countryId);
-};
-
-export const selectRegionById = (state: { countries: CountriesState }, countryId: number, regionId: number) => {
-    const regions = selectRegions(state);
-    const countryRegions = regions[countryId] || [];
-    return countryRegions.find(region => region.id === regionId);
-};
 
 export default countriesSlice.reducer;
