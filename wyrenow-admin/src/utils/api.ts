@@ -11,6 +11,63 @@ class ApiClient {
     };
   }
 
+  // Helper function to transform region data consistently
+  private transformRegion(region: any, countryId: string): Region {
+    return {
+      id: region.id.toString(),
+      name: region.name,
+      code: region.code,
+      status: region.status,
+      countryId: countryId,
+      createdAt: new Date(region.created_at || Date.now()),
+      updatedAt: new Date(region.updated_at || Date.now()),
+    };
+  }
+
+  // Helper function to transform regions array consistently
+  private transformRegions(regions: any, countryId: string): Region[] {
+    if (!regions) return [];
+    
+    // Handle different region data formats
+    let regionArray = regions;
+    
+    // If regions is a string, parse it as JSON
+    if (typeof regions === 'string') {
+      try {
+        regionArray = JSON.parse(regions);
+      } catch (e) {
+        console.error('Failed to parse regions JSON:', e);
+        return [];
+      }
+    }
+    
+    // If it's not an array, return empty array
+    if (!Array.isArray(regionArray)) {
+      return [];
+    }
+    
+    return regionArray.map((region: any) => this.transformRegion(region, countryId));
+  }
+
+  // Helper function to transform country data consistently  
+  private transformCountry(countryData: any): Country {
+    return {
+      id: countryData.id.toString(),
+      name: countryData.name,
+      code: countryData.code,
+      currency: countryData.currency,
+      currencySymbol: countryData.currency_symbol,
+      productPvRate: countryData.product_pv_rate,
+      bonusPvRate: countryData.bonus_pv_rate,
+      platformMargin: countryData.platform_margin,
+      crossCountryCapPercentage: countryData.cross_country_cap_percentage,
+      status: countryData.status,
+      regions: this.transformRegions(countryData.regions, countryData.id.toString()),
+      createdAt: new Date(countryData.created_at || Date.now()),
+      updatedAt: new Date(countryData.updated_at || Date.now()),
+    };
+  }
+
   // Mock data for packages (keeping packages as mock for now)
   private mockPackages: Package[] = [
     {
@@ -154,7 +211,6 @@ class ApiClient {
   // Country API - Real API implementations
   async getCountries(): Promise<Country[]> {
     try {
-      console.log("Fetching countries from API...");
 
       const response = await fetch(`${this.baseUrl}/countries`, {
         method: "GET",
@@ -175,36 +231,10 @@ class ApiClient {
       }
 
       // Transform API response to match our Country interface
-      const countries: Country[] = result.data.countries.map(
-        (country: any) => ({
-          id: country.id.toString(),
-          name: country.name,
-          code: country.code,
-          currency: country.currency,
-          currencySymbol: country.currency_symbol,
-          // Updated for new schema
-          productPvRate: country.product_pv_rate,
-          bonusPvRate: country.bonus_pv_rate,
-          platformMargin: country.platform_margin,
-          crossCountryCapPercentage: country.cross_country_cap_percentage,
-          status: country.status,
-          regions: country.regions
-            ? country.regions.map((region: any) => ({
-                id: region.id.toString(),
-                name: region.name,
-                code: region.code,
-                status: region.status,
-                countryId: country.id.toString(),
-                createdAt: new Date(region.created_at || Date.now()),
-                updatedAt: new Date(region.updated_at || Date.now()),
-              }))
-            : [],
-          createdAt: new Date(country.created_at || Date.now()),
-          updatedAt: new Date(country.updated_at || Date.now()),
-        })
+      const countries: Country[] = result.data.countries.map((country: any) => 
+        this.transformCountry(country)
       );
 
-      console.log(`Successfully fetched ${countries.length} countries`);
       return countries;
     } catch (error) {
       console.error("API Client Error fetching countries:", error);
@@ -214,7 +244,6 @@ class ApiClient {
 
   async getCountry(id: string): Promise<Country | null> {
     try {
-      console.log(`Fetching country with ID: ${id}`);
 
       const response = await fetch(`${this.baseUrl}/countries/${id}`, {
         method: "GET",
@@ -237,35 +266,7 @@ class ApiClient {
         throw new Error("Invalid response format from server");
       }
 
-      // Transform API response to match our Country interface
-      const country: Country = {
-        id: result.data.id.toString(),
-        name: result.data.name,
-        code: result.data.code,
-        currency: result.data.currency,
-        currencySymbol: result.data.currency_symbol,
-        // Updated for new schema
-        productPvRate: result.data.product_pv_rate,
-        bonusPvRate: result.data.bonus_pv_rate,
-        platformMargin: result.data.platform_margin,
-        crossCountryCapPercentage: result.data.cross_country_cap_percentage,
-        status: result.data.status,
-        regions: result.data.regions
-          ? JSON.parse(result.data.regions).map((region: any) => ({
-              id: region.id.toString(),
-              name: region.name,
-              code: region.code,
-              status: region.status,
-              countryId: result.data.id.toString(),
-              createdAt: new Date(region.created_at || Date.now()),
-              updatedAt: new Date(region.updated_at || Date.now()),
-            }))
-          : [],
-        createdAt: new Date(result.data.created_at || Date.now()),
-        updatedAt: new Date(result.data.updated_at || Date.now()),
-      };
-
-      console.log("Successfully fetched country:", country.name);
+      const country = this.transformCountry(result.data);
       return country;
     } catch (error) {
       console.error("API Client Error fetching country:", error);
@@ -273,10 +274,8 @@ class ApiClient {
     }
   }
 
-  // Keep createCountry exactly as it was but update field mappings
   async createCountry(countryData: any): Promise<Country> {
     try {
-      console.log("API Client creating country:", countryData);
 
       const response = await fetch(`${this.baseUrl}/countries`, {
         method: "POST",
@@ -329,35 +328,7 @@ class ApiClient {
         throw new Error("Invalid response format from server");
       }
 
-      // Transform the API response to match our Country interface
-      const country: Country = {
-        id: result.data.id.toString(),
-        name: result.data.name,
-        code: result.data.code,
-        currency: result.data.currency,
-        currencySymbol: result.data.currency_symbol,
-        // Updated for new schema
-        productPvRate: result.data.product_pv_rate,
-        bonusPvRate: result.data.bonus_pv_rate,
-        platformMargin: result.data.platform_margin,
-        crossCountryCapPercentage: result.data.cross_country_cap_percentage,
-        status: result.data.status,
-        regions: result.data.regions
-          ? result.data.regions.map((region: any) => ({
-              id: region.id.toString(),
-              name: region.name,
-              code: region.code,
-              status: region.status,
-              countryId: result.data.id.toString(),
-              createdAt: new Date(region.created_at || Date.now()),
-              updatedAt: new Date(region.updated_at || Date.now()),
-            }))
-          : [],
-        createdAt: new Date(result.data.created_at || Date.now()),
-        updatedAt: new Date(result.data.updated_at || Date.now()),
-      };
-
-      console.log("Country created successfully:", country);
+      const country = this.transformCountry(result.data);
       return country;
     } catch (error) {
       console.error("API Client Error:", error);
@@ -370,9 +341,6 @@ class ApiClient {
     countryData: Partial<Country>
   ): Promise<Country> {
     try {
-      console.log(`Updating country ${id} with data:`, countryData);
-
-      // Transform our Country interface data to API format
       const apiData: any = {};
       if (countryData.name !== undefined) apiData.name = countryData.name;
       if (countryData.code !== undefined) apiData.code = countryData.code;
@@ -380,7 +348,6 @@ class ApiClient {
         apiData.currency = countryData.currency;
       if (countryData.currencySymbol !== undefined)
         apiData.currency_symbol = countryData.currencySymbol;
-      // Updated for new schema
       if (countryData.productPvRate !== undefined)
         apiData.product_pv_rate = countryData.productPvRate;
       if (countryData.bonusPvRate !== undefined)
@@ -428,7 +395,6 @@ class ApiClient {
         code: result.data.code,
         currency: result.data.currency,
         currencySymbol: result.data.currency_symbol,
-        // Updated for new schema
         productPvRate: result.data.product_pv_rate,
         bonusPvRate: result.data.bonus_pv_rate,
         platformMargin: result.data.platform_margin,
@@ -439,7 +405,6 @@ class ApiClient {
         updatedAt: new Date(result.data.updated_at || Date.now()),
       };
 
-      console.log("Country updated successfully:", updatedCountry);
       return updatedCountry;
     } catch (error) {
       console.error("API Client Error updating country:", error);
@@ -449,8 +414,6 @@ class ApiClient {
 
   async deleteCountry(id: string): Promise<void> {
     try {
-      console.log(`Deleting country with ID: ${id}`);
-
       const response = await fetch(`${this.baseUrl}/countries/${id}`, {
         method: "DELETE",
         headers: this.getHeaders(),
@@ -462,32 +425,97 @@ class ApiClient {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      console.log("Country deleted successfully");
     } catch (error) {
       console.error("API Client Error deleting country:", error);
       throw error;
     }
   }
 
-  // Keep createRegion exactly as it was
+  
+  // MISSING: Get regions for a specific country
+  async getCountryRegions(countryId: string): Promise<Region[]> {
+    try {
+
+      const response = await fetch(`${this.baseUrl}/countries/${countryId}/regions`, {
+        method: "GET",
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Failed to fetch regions:", errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.data) {
+        console.error("Invalid response format:", result);
+        throw new Error("Invalid response format from server");
+      }
+
+      const regions = result.data.map((region: any) => 
+        this.transformRegion(region, countryId)
+      );
+
+      return regions;
+    } catch (error) {
+      console.error("API Client Error fetching regions:", error);
+      throw error;
+    }
+  }
+
+  // MISSING: Get single region by ID
+  async getRegion(regionId: string): Promise<Region | null> {
+    try {
+
+      const response = await fetch(`${this.baseUrl}/countries/regions/${regionId}`, {
+        method: "GET",
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        const errorText = await response.text();
+        console.error("Failed to fetch region:", errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.data) {
+        console.error("Invalid response format:", result);
+        throw new Error("Invalid response format from server");
+      }
+
+      const region = this.transformRegion(result.data, result.data.country_id.toString());
+      return region;
+    } catch (error) {
+      console.error("API Client Error fetching region:", error);
+      throw error;
+    }
+  }
+
   async createRegion(
     countryId: string,
     regionData: Omit<Region, "id" | "countryId" | "createdAt" | "updatedAt">
   ): Promise<Region> {
     try {
+
       const response = await fetch(
         `${this.baseUrl}/countries/${countryId}/regions`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: this.getHeaders(),
           body: JSON.stringify(regionData),
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error("Failed to create region:", errorText);
         let errorData;
         try {
           errorData = JSON.parse(errorText);
@@ -507,16 +535,7 @@ class ApiClient {
         throw new Error("Invalid response format from server");
       }
 
-      const region: Region = {
-        id: result.data.id.toString(),
-        name: result.data.name,
-        code: result.data.code,
-        status: result.data.status,
-        countryId: countryId,
-        createdAt: new Date(result.data.created_at || Date.now()),
-        updatedAt: new Date(result.data.updated_at || Date.now()),
-      };
-
+      const region = this.transformRegion(result.data, countryId);
       return region;
     } catch (error) {
       console.error("API Client Error creating region:", error);
@@ -529,14 +548,17 @@ class ApiClient {
     regionData: Partial<Region>
   ): Promise<Region> {
     try {
-      console.log(`Updating region ${regionId} with data:`, regionData);
+      const apiData: any = {};
+      if (regionData.name !== undefined) apiData.name = regionData.name;
+      if (regionData.code !== undefined) apiData.code = regionData.code;
+      if (regionData.status !== undefined) apiData.status = regionData.status;
 
       const response = await fetch(
         `${this.baseUrl}/countries/regions/${regionId}`,
         {
           method: "PUT",
           headers: this.getHeaders(),
-          body: JSON.stringify(regionData),
+          body: JSON.stringify(apiData),
         }
       );
 
@@ -563,17 +585,7 @@ class ApiClient {
         throw new Error("Invalid response format from server");
       }
 
-      const updatedRegion: Region = {
-        id: result.data.id.toString(),
-        name: result.data.name,
-        code: result.data.code,
-        status: result.data.status,
-        countryId: result.data.country_id.toString(),
-        createdAt: new Date(result.data.created_at || Date.now()),
-        updatedAt: new Date(result.data.updated_at || Date.now()),
-      };
-
-      console.log("Region updated successfully:", updatedRegion);
+      const updatedRegion = this.transformRegion(result.data, result.data.country_id.toString());
       return updatedRegion;
     } catch (error) {
       console.error("API Client Error updating region:", error);
@@ -583,8 +595,6 @@ class ApiClient {
 
   async deleteRegion(regionId: string): Promise<void> {
     try {
-      console.log(`Deleting region with ID: ${regionId}`);
-
       const response = await fetch(
         `${this.baseUrl}/countries/regions/${regionId}`,
         {
@@ -599,7 +609,6 @@ class ApiClient {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      console.log("Region deleted successfully");
     } catch (error) {
       console.error("API Client Error deleting region:", error);
       throw error;

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, RefreshCw } from 'lucide-react';
 import { Country, Region, TableColumn } from '../../types';
 import { apiClient } from '../../utils/api';
 import { Table } from '../ui/Table';
@@ -15,19 +15,41 @@ interface RegionManagerProps {
 }
 
 export function RegionManager({ country, onClose, onRegionsUpdated }: RegionManagerProps) {
-  const [regions, setRegions] = useState<Region[]>(country.regions);
+  const [regions, setRegions] = useState<Region[]>([]);
+  const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingRegion, setEditingRegion] = useState<Region | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     code: '',
-    status: 'active'
+    status: 'active' as 'active' | 'inactive'
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Load regions when component mounts or country changes
+  useEffect(() => {
+    loadRegions();
+  }, [country.id]);
+
+  // Function to load regions from API
+  const loadRegions = async () => {
+    setLoading(true);
+    try {
+      const fetchedRegions = await apiClient.getCountryRegions(country.id);
+      setRegions(fetchedRegions);
+    } catch (error) {
+      console.error('Failed to load regions:', error);
+      // Fall back to country.regions if API fails
+      if (country.regions) {
+        setRegions(country.regions);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEdit = (region: Region) => {
-    console.log('RegionManager: Editing region:', region.name);
     setEditingRegion(region);
     setFormData({
       name: region.name,
@@ -40,17 +62,14 @@ export function RegionManager({ country, onClose, onRegionsUpdated }: RegionMana
   const handleDelete = async (region: Region) => {
     if (window.confirm(`Are you sure you want to delete "${region.name}"?`)) {
       try {
-        console.log('RegionManager: Deleting region:', region.name);
         await apiClient.deleteRegion(region.id);
         
-        // Update local state
-        const updatedRegions = regions.filter(r => r.id !== region.id);
-        setRegions(updatedRegions);
+        // Reload regions from API after deletion
+        await loadRegions();
         
         // Notify parent component
         onRegionsUpdated();
         
-        console.log('Region deleted successfully');
       } catch (error) {
         console.error('Failed to delete region:', error);
         alert('Failed to delete region. Please try again.');
@@ -108,26 +127,13 @@ export function RegionManager({ country, onClose, onRegionsUpdated }: RegionMana
       };
 
       if (editingRegion) {
-        // Use proper API call for updating region
-        console.log('RegionManager: Updating region:', editingRegion.id, regionData);
-        const updatedRegion = await apiClient.updateRegion(editingRegion.id, regionData);
-        
-        // Update local state
-        const updatedRegions = regions.map(r => r.id === editingRegion.id ? updatedRegion : r);
-        setRegions(updatedRegions);
-        
-        console.log('Region updated successfully:', updatedRegion);
+        await apiClient.updateRegion(editingRegion.id, regionData);
       } else {
-        // Keep createRegion exactly the same
-        console.log('RegionManager: Creating new region for country:', country.id, regionData);
-        const newRegion = await apiClient.createRegion(country.id, regionData);
-        
-        // Update local state
-        const updatedRegions = [...regions, newRegion];
-        setRegions(updatedRegions);
-        
-        console.log('Region created successfully:', newRegion);
+        await apiClient.createRegion(country.id, regionData);
       }
+      
+      // Reload regions from API after create/update
+      await loadRegions();
       
       // Reset form and close modal
       setShowForm(false);
@@ -203,6 +209,7 @@ export function RegionManager({ country, onClose, onRegionsUpdated }: RegionMana
             onClick={() => handleEdit(row)}
             className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
             title="Edit Region"
+            disabled={loading}
           >
             <Edit className="w-4 h-4" />
           </button>
@@ -210,6 +217,7 @@ export function RegionManager({ country, onClose, onRegionsUpdated }: RegionMana
             onClick={() => handleDelete(row)}
             className="p-1 text-gray-500 hover:text-red-600 transition-colors"
             title="Delete Region"
+            disabled={loading}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -227,16 +235,28 @@ export function RegionManager({ country, onClose, onRegionsUpdated }: RegionMana
             {regions.length} {regions.length === 1 ? 'region' : 'regions'} configured
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Region
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            variant="secondary" 
+            onClick={loadRegions}
+            disabled={loading}
+            size="sm"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button onClick={() => setShowForm(true)} disabled={loading}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Region
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg border">
         <Table
           data={regions}
           columns={columns}
+          loading={loading}
           emptyMessage={`No regions configured for ${country.name}`}
         />
       </div>
