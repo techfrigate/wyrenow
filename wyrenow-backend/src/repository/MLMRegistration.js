@@ -33,7 +33,7 @@ const create = async (data) => {
 
         // Validate country and region
         const locationQuery = `
-            SELECT c.name as country_name, r.name as region_name, c.pv_rate
+            SELECT c.name as country_name, r.name as region_name, c.product_pv_rate
             FROM countries c 
             LEFT JOIN regions r ON c.id = r.country_id 
             WHERE c.id = ? AND r.id = ? AND c.status = 'active' AND r.status = 'active'
@@ -305,7 +305,9 @@ async function distributeBVUpTree(connection, newUserId, bv, parentId, leg) {
     let currentParentId = parentId;
     
     while (currentParentId) {
-        // Update parent's leg BV
+             const hasBVActivated = await hasRecruitedDownline(connection, currentParentId);
+             if(hasBVActivated){
+// Update parent's leg BV
         const legField = leg === 'left' ? 'left_leg_bv' : 'right_leg_bv';
         const updateBvQuery = `
             UPDATE user_bv 
@@ -322,7 +324,12 @@ async function distributeBVUpTree(connection, newUserId, bv, parentId, leg) {
         const message = `BV added from new registration: ${newUserId}`;
         await connection.execute(logBvQuery, [newUserId, currentParentId, message, bv]);
         
-        // Get parent's parent for next iteration
+       
+             }else{
+                console.log(`⚠️ BV not added to user ${currentParentId} - no downlines recruited yet`);
+             }
+        
+              // Get parent's parent for next iteration
         const parentQuery = 'SELECT parent_user_id FROM tree WHERE user_id = ?';
         const [parentResult] = await connection.execute(parentQuery, [currentParentId]);
         
@@ -351,6 +358,18 @@ async function distributeBVUpTree(connection, newUserId, bv, parentId, leg) {
         }
     }
 } 
+
+
+async function hasRecruitedDownline(connection, userId) {
+    const checkQuery = `
+        SELECT COUNT(*) as downline_count 
+        FROM tree 
+        WHERE parent_user_id = ? AND (left_leg_user_id IS NOT NULL OR right_leg_user_id IS NOT NULL)
+    `;
+    const [result] = await connection.execute(checkQuery, [userId]);
+    return result[0].downline_count > 0;
+}
+
 
 /**
  * Calculate binary commissions (simplified version)
@@ -403,7 +422,6 @@ async function calculateGenerationBonuses(connection, sponsorId, newUserPV, newU
         // ===== STEP 2: APPLY CROSS-COUNTRY CAP IF NEEDED =====
         
         let effectivePV = newUserPV;
-        /* -------------------------------------------- i will comment it letter  -----------------------------------------------------*/
         
         const isCrossCountry = sponsor.country_id !== newUserCountryId;
         
@@ -464,9 +482,6 @@ async function calculateGenerationBonuses(connection, sponsorId, newUserPV, newU
                         
                         // Apply cross-country cap for upline if needed
                         let uplineEffectivePV = newUserPV;
-
-/* -------------------------------------------- i will comment it letter it must to do -----------------------------------------------------*/
-
                         if (isUplineCrossCountry) {
                             uplineEffectivePV = newUserPV * 0.30;
                         }

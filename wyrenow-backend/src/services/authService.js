@@ -18,7 +18,7 @@ const login = async (email, password) => {
     expiresIn: config.JWT_EXPIRES_IN
   });
 
-  return { token, user: { id: user.id, username: user.username } };
+  return { token, user: user };
 };
 
 module.exports = {

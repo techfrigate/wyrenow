@@ -12,6 +12,7 @@ import { clearError, fetchBinaryTree } from '../redux/slices/binaryTreeSlice';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import LoadingScreen from '../components/Layout/LoadingScreen';
 import toast from 'react-hot-toast';
+import LoadingSpinner from '../components/Layout/LoadingSpinner';
 interface StatItem {
   title: string;
   value: string;
@@ -496,9 +497,11 @@ useEffect(() => {
   };
 
   return (
-    <div className="h-full dark:border-gray-700 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950 p-2 sm:p-4 lg:p-6">
+    <div className="  relative dark:border-gray-700 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950 p-2 sm:p-4 lg:p-6">
       {
-        loading?<LoadingScreen message="Loading Binary Tree..." />:  <div className="max-w-full mx-auto space-y-3 sm:space-y-4 lg:space-y-5">
+          loading ?  
+     <LoadingSpinner message="Loading Binary Tree..."  size='xl'/>
+         :  <div className="max-w-full    mx-auto space-y-3 sm:space-y-4 lg:space-y-5">
         {/* Stats Cards using Redux data */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
           {statsData.map((stat) => (

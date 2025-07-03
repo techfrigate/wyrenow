@@ -1,4 +1,5 @@
 const PackageRepository = require('../repository/Package');
+const { HttpError } = require('../utils/helpers');
 
 const getAllPackages = async (filters) => {
   const packages = await PackageRepository.findAll(filters);
@@ -78,6 +79,37 @@ const calculatePackagePrices = async (pv, pvRates) => {
   };
 };
 
+const getPackagesByCountry = async (country_id) => {
+  if (!country_id) throw new HttpError('Country ID is required', 400);
+  
+  console.log('🔎 Fetching packages for country:', country_id);
+  
+  const packages = await PackageRepository.getPackagesByCountryRepo(country_id);
+  if (!packages || packages.length === 0) {
+    throw new HttpError('No packages found for this country', 404);
+  }
+  // Calculate dynamic pricing for each package
+  const packagesWithPricing = packages.map(pkg => ({
+    id: pkg.id,
+    name: pkg.name,
+    description: pkg.description,
+    pv: pkg.pv,
+    bottles: pkg.bottles,
+    package_type: pkg.package_type,
+    status: pkg.status,
+    // Dynamic price calculation: PV * Country Bonus PV Rate
+    price: parseFloat((pkg.pv * pkg.product_pv_rate).toFixed(2)),
+    currency: pkg.currency,
+    currency_symbol: pkg.currency_symbol,
+    country_name: pkg.country_name,
+    country_code: pkg.code,
+    product_pv_rate: pkg.product_pv_rate,
+    created_at: pkg.created_at
+  }));
+
+  return packagesWithPricing;
+};
+
 module.exports = {
   getAllPackages,
   getPackageById,
@@ -87,5 +119,6 @@ module.exports = {
   togglePackageStatus,
   getActivePackages,
   bulkUpdatePackageStatus,
-  calculatePackagePrices
+  calculatePackagePrices,
+  getPackagesByCountry
 };

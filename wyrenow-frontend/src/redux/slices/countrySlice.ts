@@ -32,10 +32,12 @@ export interface CountriesState {
     loading: {
         countries: boolean;
         regions: boolean;
+        country: boolean;
     };
     error: {
         countries: string | null;
         regions: string | null;
+        country: string | null;
     };
 }
 
@@ -88,6 +90,26 @@ export const fetchRegionsByCountry = createAsyncThunk<
     }
 );
 
+// Async thunk for fetching country by ID
+export const fetchCountryById = createAsyncThunk<
+    Country | null,
+    number,
+    { rejectValue: string }
+>(
+    'countries/fetchCountryById',
+    async (countryId, { rejectWithValue }) => {
+        try {
+            const response = await axios.get(`${BaseUrl}/countries/${countryId}`);
+            return response.data.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                return rejectWithValue(error.response?.data?.message || 'Failed to fetch country');
+            }
+            return rejectWithValue('An unexpected error occurred');
+        }
+    }
+);
+
 const initialState: CountriesState = {
     countries: [],
     regions: [],
@@ -95,11 +117,13 @@ const initialState: CountriesState = {
     selectedRegion: null,
     loading: {
         countries: false,
-        regions: false
+        regions: false,
+        country: false
     },
     error: {
         countries: null,
-        regions: null
+        regions: null,
+        country: null
     }
 };
 
@@ -107,19 +131,6 @@ const countriesSlice = createSlice({
     name: 'countries',
     initialState,
     reducers: {
-        setSelectedCountry: (state, action: PayloadAction<Country | null>) => {
-            state.selectedCountry = action.payload;
-            state.selectedRegion = null; // Reset region when country changes
-        },
-        
-        setSelectedRegion: (state, action: PayloadAction<Region | null>) => {
-            state.selectedRegion = action.payload;
-        },
-        
-        clearSelectedCountry: (state) => {
-            state.selectedCountry = null;
-            state.selectedRegion = null;
-        },
         
         clearCountryErrors: (state) => {
             state.error.countries = null;
@@ -160,15 +171,27 @@ const countriesSlice = createSlice({
             .addCase(fetchRegionsByCountry.rejected, (state, action) => {
                 state.loading.regions = false;
                 state.error.regions = action.payload || 'Unknown error';
+            })
+            
+            // Fetch Country by ID
+            .addCase(fetchCountryById.pending, (state) => {
+                state.loading.country = true;
+                state.error.country = null;
+            })
+            .addCase(fetchCountryById.fulfilled, (state, action) => {
+                state.loading.country = false;
+                state.selectedCountry = action.payload;
+                state.error.country = null;
+            })
+            .addCase(fetchCountryById.rejected, (state, action) => {
+                state.loading.country = false;
+                state.error.country = action.payload || 'Unknown error';
             });
     }
 });
 
 // Export actions
 export const {
-    setSelectedCountry,
-    setSelectedRegion,
-    clearSelectedCountry,
     clearCountryErrors,
     resetCountriesState
 } = countriesSlice.actions;
