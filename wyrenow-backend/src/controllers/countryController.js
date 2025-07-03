@@ -44,9 +44,7 @@ const getCountryById  = async (req, res, next) => {
 };
 
 const createCountry = async (req, res, next) => {
-    try {
-        console.log('Creating country with data:', req.body);
-        
+    try {        
         const country = await countryService.createCountryService(req.body);
 
         successResponse(res, {

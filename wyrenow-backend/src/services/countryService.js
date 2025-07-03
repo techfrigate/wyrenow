@@ -50,7 +50,6 @@ async function createCountryService(countryData) {
     const connection = await pool.getConnection();
     
     try {
-        console.log('Service creating country with regions:', countryData);
         
         await connection.beginTransaction();
         
@@ -69,21 +68,17 @@ async function createCountryService(countryData) {
         };
         
         const countryResult = await createCountry(countryDataWithDefaults, connection);
-        console.log('Country created with ID:', countryResult.id);
         
         if (countryData.regions && countryData.regions.length > 0) {
-            console.log(`Creating ${countryData.regions.length} regions for country ${countryResult.id}`);
             
             for (const regionData of countryData.regions) {
                 await createRegion(countryResult.id, regionData, connection);
-                console.log(`Created region: ${regionData.name}`);
             }
         }
         
         await connection.commit();
         
         const completeCountry = await findCountryById(countryResult.id);
-        console.log('Country created successfully with regions:', completeCountry);
         
         return completeCountry;
     } catch (error) {
@@ -124,7 +119,6 @@ async function deleteCountryService(id) {
 
 // Get regions for a country
 async function getCountryRegionsService(countryId, filters) {
-    console.log('Fetching regions for country ID:', countryId);
     const country = await findCountryById(countryId);
     if (!country) {
         throw new AppError('Country not found', 404);
