@@ -1,176 +1,199 @@
-import React from 'react';
-import { Check, Plus, Minus } from 'lucide-react';
-import { Card } from '../ui';
+import React, { useState, useRef, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Check, Star } from 'lucide-react';
+import  Card  from '../ui/Card';
 import { 
   FormData, 
   FormErrors, 
   RegistrationPackage, 
-  Product, 
-  CartItem 
-} from '../../types';
-import { REGISTRATION_PACKAGES, PRODUCTS } from '../../constants';
-import { formatCurrency } from '../../utils';
+  Country 
+} from '../../types/index';
+import { formatCurrency, calculatePackagePrice, formatCurrencyPackage } from '../../utils/formatCurrency';
+import { useAppDispatch, useAppSelector } from '../../hooks/redux';
+import { fetchPackages } from '../../redux/slices/packageSlice';
+import { fetchCountryById } from '../../redux/slices/countrySlice';
+import LoadingSpinner from '../Layout/LoadingSpinner';
 
 interface PackageStepProps {
   formData: FormData;
   errors: FormErrors;
-  currency: string;
-  selectedPackage: RegistrationPackage | undefined;
-  totalPV: number;
-  totalAmount: number;
   updateFormData: (data: Partial<FormData>) => void;
-  addToCart: (product: Product) => void;
-  updateCartQuantity: (productId: string, quantity: number) => void;
 }
 
 const PackageStep: React.FC<PackageStepProps> = ({
   formData,
   errors,
-  currency,
-  selectedPackage,
-  totalPV,
-  totalAmount,
-  updateFormData,
-  addToCart,
-  updateCartQuantity
+  updateFormData
 }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const dispatch  = useAppDispatch();
+   
+  useEffect(()=>{
+   dispatch(fetchPackages(Number(formData.country)));
+   updateFormData({selectedPackage: ''})
+  },[dispatch,formData.country])
+
+   
+   const {loading,error,packages}  = useAppSelector(state => state.package)  
+  
+ 
+  const checkScrollButtons = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = 320; // Width of one card plus gap
+      const newScrollLeft = direction === 'left' 
+        ? scrollRef.current.scrollLeft - scrollAmount
+        : scrollRef.current.scrollLeft + scrollAmount;
+      
+      scrollRef.current.scrollTo({
+        left: newScrollLeft,
+        behavior: 'smooth'
+      });
+      
+      setTimeout(checkScrollButtons, 300);
+    }
+  };
+
+  React.useEffect(() => {
+    checkScrollButtons();
+    if (scrollRef.current) {
+      scrollRef.current.addEventListener('scroll', checkScrollButtons);
+      return () => scrollRef.current?.removeEventListener('scroll', checkScrollButtons);
+    }
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Package Selection */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Select Registration Package
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {REGISTRATION_PACKAGES.map(pkg => (
-            <div
-              key={pkg.id}
-              className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                formData.selectedPackage === pkg.id
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600'
-              }`}
-              onClick={() => updateFormData({ selectedPackage: pkg.id })}
-            >
-              <div className="text-center">
-                <h4 className="font-semibold text-gray-900 dark:text-white">{pkg.name}</h4>
-                <p className="text-2xl font-bold text-primary-600 dark:text-primary-400 my-2">
-                  {formatCurrency(pkg.price, currency)}
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  PV Limit: {pkg.pvLimit}
-                </p>
-                <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                  {pkg.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-center">
-                      <Check className="w-3 h-3 text-green-500 mr-1" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))}
-        </div>
-        {errors.selectedPackage && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.selectedPackage}</p>
-        )}
-      </div>
-
-      {/* Product Selection */}
-      {selectedPackage && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Select Products (Optional)
+{
+    loading?<LoadingSpinner message='Loading Packages' size='xl'/>: <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Select Registration Package
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {PRODUCTS.map(product => (
-              <div key={product.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-32 object-cover rounded-lg mb-3"
-                />
-                <h4 className="font-medium text-gray-900 dark:text-white">{product.name}</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{product.description}</p>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {formatCurrency(product.price, currency)}
-                  </span>
-                  <span className="text-sm bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 px-2 py-1 rounded">
-                    {product.pv} PV
-                  </span>
-                </div>
-                <button
-                  onClick={() => addToCart(product)}
-                  className="w-full py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                  Add to Cart
-                </button>
-              </div>
-            ))}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => scroll('left')}
+              disabled={!canScrollLeft}
+              className={`p-2 rounded-full border ${
+                canScrollLeft 
+                  ? 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300' 
+                  : 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+              }`}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => scroll('right')}
+              disabled={!canScrollRight}
+              className={`p-2 rounded-full border ${
+                canScrollRight 
+                  ? 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300' 
+                  : 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+              }`}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
+        </div>
 
-          {/* Shopping Cart */}
-          {formData.cart.length > 0 && (
-            <Card className="bg-gray-50 dark:bg-gray-700 p-4">
-              <h4 className="font-medium text-gray-900 dark:text-white mb-3">Shopping Cart</h4>
-              <div className="space-y-3">
-                {formData.cart.map(item => (
-                  <div key={item.product.id} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src={item.product.image}
-                        alt={item.product.name}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white">{item.product.name}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {formatCurrency(item.product.price, currency)} • {item.product.pv} PV
-                        </p>
+        <div className="relative">
+          <div
+            ref={scrollRef}
+            className="flex space-x-4 overflow-x-auto scrollbar-hide pb-4"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {packages.length && packages.map(pkg => {
+              const price = pkg.price
+              const isSelected = formData.selectedPackage === pkg.id;
+              
+              return (
+                <div
+                  key={pkg.id}
+                  className={`flex-none w-80 border-2 rounded-xl p-6 cursor-pointer transition-all duration-200 relative ${
+                    isSelected
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md'
+                  }`}
+                  onClick={() => updateFormData({ selectedPackage: pkg.id })}
+                >
+    
+                  <div className="text-center">
+                    <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                      {pkg.name}
+                    </h4>
+                    <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">
+                       {packages[0].currency_symbol} {price}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      {pkg.pv} PV
+                    </p>
+                    
+                    {/* <div className="text-left space-y-2">
+                      {pkg.features.map((feature, idx) => (
+                        <div key={idx} className="flex items-start">
+                          <Check className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {feature}
+                          </span>
+                        </div>
+                      ))}
+                    </div> */}
+                  </div>
+                  
+                  {isSelected && (
+                    <div className="absolute top-4 right-4">
+                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                        <Check className="w-4 h-4 text-white" />
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
-                        className="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 rounded-full hover:bg-gray-300 dark:hover:bg-gray-500"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="w-8 text-center font-medium text-gray-900 dark:text-white">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
-                        className="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 rounded-full hover:bg-gray-300 dark:hover:bg-gray-500"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    Total PV: {totalPV} / {selectedPackage.pvLimit}
-                  </span>
-                  <span className="font-bold text-gray-900 dark:text-white">
-                    {formatCurrency(totalAmount, currency)}
-                  </span>
+                  )}
                 </div>
-                {totalPV > selectedPackage.pvLimit && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-2">
-                    Total PV exceeds package limit. Please remove some products.
-                  </p>
-                )}
-              </div>
-            </Card>
-          )}
-          {errors.cart && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.cart}</p>}
+              );
+            })}
+          </div>
         </div>
+        
+        {errors.selectedPackage && (
+          <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.selectedPackage}</p>
+        )}
+      </div>
+}
+     
+
+      {/* Price Summary */}
+      {formData.selectedPackage && (
+        <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {packages.find(p => p.id === formData.selectedPackage)?.name}
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                PV Rate: {packages[0].product_pv_rate} {packages[0].country_name} per PV
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                { 
+              packages.find(p => p.id === formData.selectedPackage)?.currency_symbol + packages.find(p => p.id === formData.selectedPackage)?.price
+                }
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Total Amount
+              </p>
+            </div>
+          </div>
+        </Card>
       )}
     </div>
   );

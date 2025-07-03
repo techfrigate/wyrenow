@@ -13,5 +13,6 @@ router.delete('/packages/:id', PackageController.deletePackage);
 router.patch('/packages/:id/status', PackageController.togglePackageStatus);
 router.post('/packages/bulk-status', PackageController.bulkUpdateStatus);
 router.post('/packages/calculate-prices', PackageController.calculatePrices);
+router.get('/packages/country/:countryId', PackageController.getPackagesByCountry);
 
 module.exports = router;

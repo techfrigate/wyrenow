@@ -62,19 +62,11 @@ export default function LoadingScreen({
   };
 
   return (
-    <div className="w-full h-full relative  bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5 border border-green-500">
-        <div className="absolute top-10 left-10 w-20 h-20 bg-primary-500 rounded-full animate-pulse"></div>
-        <div className="absolute top-32 right-20 w-16 h-16 bg-secondary-500 rounded-full animate-pulse delay-1000"></div>
-        <div className="absolute bottom-20 left-32 w-12 h-12 bg-accent-500 rounded-full animate-pulse delay-2000"></div>
-        <div className="absolute bottom-32 right-10 w-24 h-24 bg-gold-500 rounded-full animate-pulse delay-500"></div>
-      </div>
-
+    <div className="w-full h-full relative border border-red-400 bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
       <div className="text-center max-w-md mx-auto px-6">
 
         {/* Loader Animation */}
-        <div className="relative mb-8 flex items-center justify-center">
+        <div className="relative  border border-red-400 mb-8 flex items-center justify-center">
           {renderLoader()}
         </div>
 

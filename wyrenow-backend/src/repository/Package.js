@@ -222,6 +222,9 @@ async function getActivePackages() {
     return result;
 }
 
+
+
+
 // Get packages with usage statistics
 async function getPackagesWithStats() {
     const query = `
@@ -327,6 +330,36 @@ async function getPackageStatistics() {
     };
 }
 
+const getPackagesByCountryRepo = async (country_id) => {
+  console.log('🔎 Finding packages by country ID:', country_id);
+  
+  const query = `
+    SELECT 
+      p.id,
+      p.name,
+      p.description,
+      p.pv,
+      p.bottles,
+      p.package_type,
+      p.status,
+      p.created_at,
+      c.currency,
+      c.code,
+      c.currency_symbol,
+      c.product_pv_rate,
+      c.name as country_name
+    FROM packages p
+    CROSS JOIN countries c
+    WHERE c.id = ? 
+      AND p.status = 'active'
+      AND c.status = 'active'
+    ORDER BY p.pv ASC
+  `;
+  
+  const [result] = await pool.execute(query, [country_id]);
+  return result;
+};
+
 module.exports = {
     findAll: findAllPackages,
     findById: findPackageById,
@@ -337,6 +370,7 @@ module.exports = {
     updateStatus: updatePackageStatus,
     count: countPackages,
     getActivePackages,
+    getPackagesByCountryRepo,
     getWithStats: getPackagesWithStats,
     bulkUpdateStatus: bulkUpdatePackageStatus,
     getByPriceRange: getPackagesByPriceRange,

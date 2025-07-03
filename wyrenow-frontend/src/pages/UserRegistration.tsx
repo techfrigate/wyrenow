@@ -16,6 +16,8 @@ import {
 import RegistrationLayout from '../components/Layout/RegistrationLayout';
 import { useLocation } from 'react-router-dom';
 import LoadingScreen from '../components/Layout/LoadingScreen';
+import { fetchPackages } from '../redux/slices/packageSlice';
+import { useAppDispatch } from '../hooks/redux';
  
 
 const UserRegistration: React.FC = () => {
@@ -76,8 +78,6 @@ const{sponsorUsername, placementUserId,placementLeg ,placementName} = Object.fro
     
   }, [sponsorUsername, placementUserId, placementLeg, placementName]);
  
- 
-
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:

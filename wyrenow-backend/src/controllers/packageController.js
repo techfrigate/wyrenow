@@ -178,6 +178,22 @@ const calculatePrices = async (req, res, next) => {
     }
 };
 
+
+const getPackagesByCountry = async (req, res, next) => {
+  try {
+    const { countryId } = req.params;
+    const data = await PackageService.getPackagesByCountry(countryId);
+     
+    return successResponse(res, {
+      message: 'Packages fetched successfully',
+      packages: data
+    });
+  } catch (error) {
+     next(error);
+  }
+};
+
+
 module.exports = {
     getAllPackages,
     getPackageById,
@@ -187,5 +203,6 @@ module.exports = {
     togglePackageStatus,
     getActivePackages,
     bulkUpdateStatus,
-    calculatePrices
+    calculatePrices,
+    getPackagesByCountry
 };

@@ -4,12 +4,14 @@ import countryReducer from "./slices/countrySlice";
 import registrationReducer from "./slices/ragistrationSlice";
 import binaryTreeReducer from './slices/binaryTreeSlice';
 import authReducer from './slices/authSlice';
+import packageReducer from './slices/packageSlice';
 export const store = configureStore({
   reducer: {
     countries:countryReducer,
     registration:registrationReducer,
     binaryTree: binaryTreeReducer,
-    auth:authReducer
+    auth:authReducer,
+    package:packageReducer
   },
 });
 
