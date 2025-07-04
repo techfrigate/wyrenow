@@ -25,11 +25,11 @@ async function runSimpleMigration() {
     
     // STEP 2: Create database if it doesn't exist
     console.log('🏗️  Creating database wyrenow_db if not exists...');
-    await connection.query('CREATE DATABASE IF NOT EXISTS wyrenow_db');
+    await connection.query('CREATE DATABASE IF NOT EXISTS btmy_store');
     console.log('✅ Database wyrenow_db ready');
     
     // STEP 3: Switch to the database
-    await connection.query('USE wyrenow_db');
+    await connection.query('USE btmy_store');
     console.log('✅ Switched to wyrenow_db database');
     
     // STEP 4: Read the migration file
@@ -129,7 +129,7 @@ async function createDatabaseIfNotExists() {
       password: config.DB_CONFIG.password
     });
     
-    await connection.query('CREATE DATABASE IF NOT EXISTS wyrenow_db');
+    await connection.query('CREATE DATABASE IF NOT EXISTS btmy_store');
     console.log('✅ Database wyrenow_db created/verified');
     
   } catch (error) {

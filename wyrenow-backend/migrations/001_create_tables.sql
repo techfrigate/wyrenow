@@ -1,6 +1,6 @@
 -- Create database if not exists
-CREATE DATABASE IF NOT EXISTS wyrenow_db;
-USE wyrenow_db;
+CREATE DATABASE IF NOT EXISTS  btmy_store;
+USE btmy_store;
  
 -- ================================================
 -- TABLES CREATION (IF NOT EXISTS)
